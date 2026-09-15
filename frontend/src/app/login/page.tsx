@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   UserPlus,
 } from 'lucide-react';
+import { authApi, setToken } from '@/lib/api-client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,15 +63,34 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // ============================================================
+      // 1. Llamar al backend con las credenciales
+      // ============================================================
+      const response = await authApi.login({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
+      console.log('[CERTIKUS] Login exitoso:', response.user.email);
+
+      // ============================================================
+      // 2. Guardar el JWT en localStorage
+      // ============================================================
+      setToken(response.token);
+
+      // ============================================================
+      // 3. Guardar datos del usuario en sessionStorage
+      // ============================================================
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem('certikus_logged_in', 'true');
-        window.sessionStorage.setItem('certikus_user_email', email);
-        window.sessionStorage.setItem('certikus_user_nombre', email.split('@')[0]);
+        window.sessionStorage.setItem('certikus_user_email', response.user.email);
+        window.sessionStorage.setItem('certikus_user_nombre', response.user.nombre);
+        window.sessionStorage.setItem('certikus_user_id', response.user.id);
+        window.sessionStorage.setItem('certikus_user_tipo', response.user.tipoUsuario);
 
+        // Si el usuario marcó "Recordarme", guardar también el email
         if (recordarme) {
-          window.localStorage.setItem('certikus_remember_email', email);
+          window.localStorage.setItem('certikus_remember_email', response.user.email);
         } else {
           window.localStorage.removeItem('certikus_remember_email');
         }
@@ -78,13 +98,28 @@ export default function LoginPage() {
 
       setSuccess(true);
 
+      // ============================================================
+      // 4. Redirigir al historial
+      // ============================================================
       setTimeout(() => {
         router.push('/historial');
       }, 700);
     } catch (err) {
-      console.error('Error en login:', err);
-      setGlobalError('Credenciales incorrectas. Verifica tus datos.');
-    } finally {
+      console.error('[CERTIKUS] Error en login:', err);
+
+      let message = 'Error al iniciar sesión. Intenta de nuevo.';
+      if (err instanceof Error) {
+        if (
+          err.message.toLowerCase().includes('credenciales') ||
+          err.message.toLowerCase().includes('invalid')
+        ) {
+          message = 'Credenciales inválidas. Verifica tu correo y contraseña.';
+        } else {
+          message = err.message;
+        }
+      }
+
+      setGlobalError(message);
       setIsSubmitting(false);
     }
   };
@@ -144,7 +179,8 @@ export default function LoginPage() {
                 }}
                 placeholder="tucorreo@ejemplo.com"
                 autoComplete="email"
-                className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+                disabled={isSubmitting}
+                className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-slate-100 ${
                   errors.email ? 'border-red-300 bg-red-50/30' : 'border-slate-300'
                 }`}
               />
@@ -162,7 +198,10 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-sm font-bold text-slate-900">
                 Contraseña
               </label>
-              <a href="#" className="text-xs text-blue-600 hover:underline font-semibold">
+              <a
+                href="#"
+                className="text-xs text-blue-600 hover:underline font-semibold"
+              >
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
@@ -178,7 +217,8 @@ export default function LoginPage() {
                 }}
                 placeholder="Tu contraseña"
                 autoComplete="current-password"
-                className={`w-full pl-11 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+                disabled={isSubmitting}
+                className={`w-full pl-11 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-slate-100 ${
                   errors.password ? 'border-red-300 bg-red-50/30' : 'border-slate-300'
                 }`}
               />
@@ -205,6 +245,7 @@ export default function LoginPage() {
               type="checkbox"
               checked={recordarme}
               onChange={(e) => setRecordarme(e.target.checked)}
+              disabled={isSubmitting}
               className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
             <label htmlFor="recordarme" className="text-xs text-slate-600 cursor-pointer">
@@ -269,8 +310,13 @@ export default function LoginPage() {
               <UserPlus className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-700">¿Aún no tienes cuenta en CERTIKUS?</p>
-              <Link href="/register" className="text-sm font-bold text-blue-600 hover:underline">
+              <p className="text-xs text-slate-700">
+                ¿Aún no tienes cuenta en CERTIKUS?
+              </p>
+              <Link
+                href="/register"
+                className="text-sm font-bold text-blue-600 hover:underline"
+              >
                 Crear cuenta gratis →
               </Link>
             </div>
