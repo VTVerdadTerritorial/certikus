@@ -92,7 +92,9 @@ INSTRUCCIONES ESPECÍFICAS:
 - Si el documento es un CERTIFICADO DE TRADICIÓN Y LIBERTAD, llena el objeto "certificado" y deja "escritura" en null.
 - Para matrículas inmobiliarias colombianas, el formato típico es "NNN-NNNNNNN" (ej: 50N-20493821).
 - Para cédulas colombianas, el formato es 8-10 dígitos sin puntos.
-- Si detectas "FALSA TRADICIÓN" o "se presume baldío" en el certificado, márcalo en los booleanos correspondientes.
+- Si el certificado menciona textualmente "FALSA TRADICIÓN", marca "anotacion_falsa_tradicion" como true. NO agregues la frase "se presume baldío" si no aparece literalmente en el documento.
+- Si el certificado menciona textualmente "PRESUNCIÓN DE BALDÍO" o "SE PRESUME BALDÍO", marca "presuncion_baldio" como true. Estos son dos conceptos jurídicos distintos que NO debes mezclar.
+- Cuando un campo no aparezca textualmente en el documento, devuélvelo como null. NUNCA agregues texto interpretativo o inferencias jurídicas.
 - Si el documento es manuscrito o de baja calidad, reduce el confidence y explica en notas_legibilidad.
 - Si el inmueble está sometido al régimen de PROPIEDAD HORIZONTAL (Ley 675 de 2001), marca "es_propiedad_horizontal" como true y extrae el nombre del conjunto, el coeficiente de copropiedad (porcentaje sobre 100), y las listas de bienes privados y comunes si aparecen en el documento.
 - Para el tipo de inmueble, identifica si es "urbano" o "rural" según la descripción del documento.
