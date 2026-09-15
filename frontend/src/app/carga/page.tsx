@@ -27,6 +27,7 @@ import {
   Plus,
   ChevronDown,
 } from 'lucide-react';
+import { casesApi, documentsApi } from '@/lib/api-client';
 
 type DocId =
   | 'escritura'
@@ -165,6 +166,7 @@ export default function CargaPage() {
   const [adicionales, setAdicionales] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState('');
 
   const handleFile = useCallback((docId: DocId, file: File) => {
     setError('');
@@ -190,6 +192,7 @@ export default function CargaPage() {
   const totalSubidos = Object.values(files).filter(Boolean).length + adicionales.length;
 
   const handleSubmit = async () => {
+    // Validaciones locales
     if (!nombreExpediente.trim()) {
       setError('Por favor, asigna un nombre al expediente.');
       return;
@@ -205,28 +208,80 @@ export default function CargaPage() {
 
     setError('');
     setIsSubmitting(true);
+    setUploadProgress('Creando expediente en el servidor...');
 
-    const expedienteId = `exp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      // ============================================================
+      // 1. Crear el caso en el backend
+      // ============================================================
+      const caso = await casesApi.create({
+        nombre: nombreExpediente.trim(),
+        tipoOperacion: 'compraventa',
+      });
 
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.setItem('certikus_expediente', nombreExpediente);
-      window.sessionStorage.setItem('certikus_expediente_id', expedienteId);
-      window.sessionStorage.setItem('certikus_escritura', files.escritura.name);
-      window.sessionStorage.setItem('certikus_certificado', files.certificado.name);
-      window.sessionStorage.setItem(
-        'certikus_docs_adicionales',
-        JSON.stringify(
-          Object.entries(files)
-            .filter(([, v]) => v)
-            .map(([k, v]) => ({ id: k, name: v?.name }))
-            .concat(adicionales.map((f) => ({ id: 'adicional', name: f.name })))
-        )
-      );
+      console.log('[CERTIKUS] Caso creado en backend:', caso);
+
+      // Guardar el case_id real para /procesando y /reporte
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('certikus_case_id', caso.id);
+        window.sessionStorage.setItem('certikus_expediente', nombreExpediente.trim());
+      }
+
+      // ============================================================
+      // 2. Subir la escritura pública
+      // ============================================================
+      setUploadProgress('Subiendo escritura pública...');
+      await documentsApi.upload(caso.id, files.escritura, 'escritura');
+      console.log('[CERTIKUS] Escritura subida correctamente');
+
+      // ============================================================
+      // 3. Subir el certificado de tradición
+      // ============================================================
+      setUploadProgress('Subiendo certificado de tradición y libertad...');
+      await documentsApi.upload(caso.id, files.certificado, 'certificado');
+      console.log('[CERTIKUS] Certificado subido correctamente');
+
+      // ============================================================
+      // 4. Subir documentos opcionales (partes, tributarios, catastrales)
+      // ============================================================
+      const otrosDocs: Array<[DocId, File]> = Object.entries(files)
+        .filter(([k, v]) => v && k !== 'escritura' && k !== 'certificado')
+        .map(([k, v]) => [k as DocId, v as File]);
+
+      for (const [docId, file] of otrosDocs) {
+        setUploadProgress(`Subiendo ${docId.replace(/_/g, ' ')}...`);
+        await documentsApi.upload(caso.id, file, docId);
+      }
+
+      // ============================================================
+      // 5. Subir documentos adicionales
+      // ============================================================
+      for (let i = 0; i < adicionales.length; i++) {
+        setUploadProgress(`Subiendo documento adicional ${i + 1} de ${adicionales.length}...`);
+        await documentsApi.upload(caso.id, adicionales[i], 'adicional');
+      }
+
+      console.log('[CERTIKUS] Todos los documentos subidos correctamente');
+      setUploadProgress('Documentos subidos. Iniciando análisis con IA...');
+
+      // ============================================================
+      // 6. Navegar a /procesando
+      // ============================================================
+      setTimeout(() => {
+        router.push('/procesando');
+      }, 800);
+    } catch (err) {
+      console.error('[CERTIKUS] Error en la carga:', err);
+      let message = 'Error al procesar el expediente. Intenta de nuevo.';
+
+      if (err instanceof Error) {
+        message = err.message;
+      }
+
+      setError(message);
+      setIsSubmitting(false);
+      setUploadProgress('');
     }
-
-    setTimeout(() => {
-      router.push('/procesando');
-    }, 500);
   };
 
   const canSubmit =
@@ -281,7 +336,8 @@ export default function CargaPage() {
             value={nombreExpediente}
             onChange={(e) => setNombreExpediente(e.target.value)}
             placeholder="Ej: Casa Pérez — Calle 100 #15-20, Bogotá"
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            disabled={isSubmitting}
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
           />
           <p className="mt-2 text-xs text-slate-500">
             Usa un nombre descriptivo para identificar este análisis en tu historial.
@@ -331,6 +387,13 @@ export default function CargaPage() {
           </div>
         )}
 
+        {uploadProgress && (
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+            <Loader2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5 animate-spin" />
+            <p className="text-sm text-blue-800 font-medium">{uploadProgress}</p>
+          </div>
+        )}
+
         <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-4">
           <Link
             href="/"
@@ -351,7 +414,7 @@ export default function CargaPage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Preparando análisis...
+                Procesando...
               </>
             ) : (
               <>
