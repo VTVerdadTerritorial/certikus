@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 
+// Cargar variables de entorno ANTES de importar cualquier módulo que las use
 dotenv.config();
 
 import { prisma } from './config/database';
@@ -14,15 +15,20 @@ import geminiRoutes from './routes/gemini.routes';
 import analysisRoutes from './routes/analysis.routes';
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = Number(process.env.PORT) || 8080;
 
+// ============================================================================
+// MIDDLEWARES GLOBALES
+// ============================================================================
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// ============================================================================
 // HEALTH CHECKS
+// ============================================================================
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
@@ -44,6 +50,7 @@ app.get('/health/db', async (_req: Request, res: Response) => {
       stats: { users: userCount },
     });
   } catch (err) {
+    console.error('Error conectando a la BD:', err);
     res.status(500).json({
       status: 'error',
       database: 'disconnected',
@@ -52,16 +59,22 @@ app.get('/health/db', async (_req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// RUTA RAÍZ
+// ============================================================================
 app.get('/', (_req: Request, res: Response) => {
   res.json({
     name: 'CERTIKUS API',
     description: 'Backend de prevalidación documental registral',
     version: '1.0.0',
+    documentation: '/api/v1',
     legal: 'CERTIKUS no sustituye la calificación oficial de la ORIP (Ley 1579 de 2012)',
   });
 });
 
+// ============================================================================
 // RUTAS DE LA API v1
+// ============================================================================
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/cases', caseRoutes);
 app.use('/api/v1/cases', documentRoutes);
@@ -69,7 +82,9 @@ app.use('/api/v1/cases', analysisRoutes);
 app.use('/api/v1/documents', documentIdRouter);
 app.use('/api/v1/documents', geminiRoutes);
 
-// 404
+// ============================================================================
+// MANEJO DE ERRORES 404
+// ============================================================================
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
     error: {
@@ -80,7 +95,9 @@ app.use((_req: Request, res: Response) => {
   });
 });
 
-// ERRORES
+// ============================================================================
+// MIDDLEWARE DE ERRORES
+// ============================================================================
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error interno:', err);
   res.status(500).json({
@@ -92,8 +109,11 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-// INICIAR
-app.listen(PORT, () => {
+// ============================================================================
+// INICIAR SERVIDOR
+// ============================================================================
+// IMPORTANTE: bind explícito a '0.0.0.0' para compatibilidad con Cloud Run (IPv4)
+app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('═══════════════════════════════════════════════════════');
   console.log('  🚀 CERTIKUS Backend');
