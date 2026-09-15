@@ -1,0 +1,217 @@
+import { prisma } from '../config/database';
+import { DocumentError } from './document.service';
+import { extractDataFromDocument } from './gemini.service';
+import { ejecutarReglas, calcularEstado, calcularMetricas } from './rules-engine';
+import type { RuleContext, RuleResult } from '../types/rules.types';
+import type { ExtractionResult } from '../types/extraction.types';
+
+// ============================================================================
+// SERVICIO: ANÁLISIS COMPLETO DE UN CASO
+// ============================================================================
+export async function analyzeCase(
+  userId: string,
+  caseId: string
+): Promise<{
+  caseId: string;
+  estado: 'CORREGIR' | 'REVISAR' | 'CONSISTENTE';
+  metrics: {
+    criticals: number;
+    reviews: number;
+    oks: number;
+    illegibles: number;
+    total: number;
+  };
+  findings: RuleResult[];
+  analysisTimeSeconds: number;
+}> {
+  const startTime = Date.now();
+
+  // 1. Verificar caso + permisos
+  const caseData = await prisma.case.findUnique({
+    where: { id: caseId },
+    include: { documents: true },
+  });
+
+  if (!caseData) {
+    throw new DocumentError('CASE_NOT_FOUND', 'Expediente no encontrado.', 404);
+  }
+  if (caseData.userId !== userId) {
+    throw new DocumentError(
+      'FORBIDDEN',
+      'No tienes permiso para analizar este expediente.',
+      403
+    );
+  }
+  if (caseData.documents.length === 0) {
+    throw new DocumentError(
+      'NO_DOCUMENTS',
+      'El expediente no tiene documentos para analizar.',
+      400
+    );
+  }
+
+  // 2. Marcar como "analyzing"
+  await prisma.case.update({
+    where: { id: caseId },
+    data: { estado: 'analyzing' },
+  });
+
+  try {
+    // 3. Extraer datos de cada documento
+    const documentosExtraidos = [];
+    for (const doc of caseData.documents) {
+      let rawExtraction = doc.rawExtraction as ExtractionResult | null;
+
+      if (!rawExtraction || doc.extractionStatus !== 'completed') {
+        console.log(`[Análisis] Extrayendo datos de ${doc.id}...`);
+        rawExtraction = await extractDataFromDocument(userId, doc.id);
+      }
+
+      documentosExtraidos.push({
+        id: doc.id,
+        tipo: doc.tipo,
+        filename: doc.filename,
+        rawExtraction,
+        extractionStatus: 'completed',
+      });
+    }
+
+    // 4. Clasificar documentos
+    const escritura = documentosExtraidos.find((d) => d.tipo === 'escritura') || null;
+    const certificado = documentosExtraidos.find((d) => d.tipo === 'certificado') || null;
+    const otrosDocumentos = documentosExtraidos.filter(
+      (d) => d.tipo !== 'escritura' && d.tipo !== 'certificado'
+    );
+
+    // 5. Ejecutar motor de reglas
+    const context: RuleContext = { escritura, certificado, otrosDocumentos };
+    console.log('[Análisis] Ejecutando 15 reglas...');
+    const findings = ejecutarReglas(context);
+
+    // 6. Calcular estado y métricas
+    const estado = calcularEstado(findings);
+    const metrics = calcularMetricas(findings);
+
+    // 7. Limpiar findings previos y guardar nuevos
+    await prisma.finding.deleteMany({ where: { caseId } });
+
+    for (const finding of findings) {
+      await prisma.finding.create({
+        data: {
+          caseId,
+          reglaId: finding.reglaId,
+          severity: finding.severity,
+          titulo: finding.titulo,
+          descripcion: finding.descripcion,
+          docAId: finding.docAId || null,
+          docAPage: finding.docAPage || null,
+          docAField: finding.docAField || null,
+          docAValue: finding.docAValue || null,
+          docBId: finding.docBId || null,
+          docBPage: finding.docBPage || null,
+          docBField: finding.docBField || null,
+          docBValue: finding.docBValue || null,
+          razon: finding.razon,
+        },
+      });
+    }
+
+    // 8. Calcular consistencia
+    const consistencia =
+      metrics.total > 0 ? Math.round((metrics.oks / metrics.total) * 100) : 0;
+
+    // 9. Actualizar el caso
+    await prisma.case.update({
+      where: { id: caseId },
+      data: {
+        estado: 'completed',
+        consistencia,
+        criticals: metrics.criticals,
+        reviews: metrics.reviews,
+        oks: metrics.oks,
+      },
+    });
+
+    const analysisTimeSeconds = (Date.now() - startTime) / 1000;
+    console.log(`[Análisis] Completado en ${analysisTimeSeconds.toFixed(2)}s`);
+    console.log(
+      `[Análisis] Estado: ${estado} | C:${metrics.criticals} R:${metrics.reviews} OK:${metrics.oks}`
+    );
+
+    return { caseId, estado, metrics, findings, analysisTimeSeconds };
+  } catch (err) {
+    await prisma.case.update({
+      where: { id: caseId },
+      data: { estado: 'failed' },
+    });
+
+    console.error('Error en análisis:', err);
+
+    if (err instanceof DocumentError) throw err;
+    throw new DocumentError(
+      'ANALYSIS_ERROR',
+      err instanceof Error ? err.message : 'Error al analizar el expediente.',
+      500
+    );
+  }
+}
+
+// ============================================================================
+// SERVICIO: OBTENER REPORTE DE UN CASO
+// ============================================================================
+export async function getCaseReport(userId: string, caseId: string) {
+  const caseData = await prisma.case.findUnique({
+    where: { id: caseId },
+    include: {
+      documents: {
+        select: {
+          id: true,
+          tipo: true,
+          filename: true,
+          extractionStatus: true,
+          extractionConfidence: true,
+          uploadedAt: true,
+        },
+      },
+      findings: { orderBy: { createdAt: 'asc' } },
+    },
+  });
+
+  if (!caseData) {
+    throw new DocumentError('CASE_NOT_FOUND', 'Expediente no encontrado.', 404);
+  }
+  if (caseData.userId !== userId) {
+    throw new DocumentError(
+      'FORBIDDEN',
+      'No tienes permiso para ver este expediente.',
+      403
+    );
+  }
+
+  let estado: 'CORREGIR' | 'REVISAR' | 'CONSISTENTE' | 'PENDIENTE';
+  if (caseData.estado === 'completed') {
+    if (caseData.criticals > 0) estado = 'CORREGIR';
+    else if (caseData.reviews > 0) estado = 'REVISAR';
+    else estado = 'CONSISTENTE';
+  } else {
+    estado = 'PENDIENTE';
+  }
+
+  return {
+    caseId: caseData.id,
+    nombre: caseData.nombre,
+    tipoOperacion: caseData.tipoOperacion,
+    estado,
+    consistencia: caseData.consistencia,
+    metrics: {
+      criticals: caseData.criticals,
+      reviews: caseData.reviews,
+      oks: caseData.oks,
+      total: caseData.criticals + caseData.reviews + caseData.oks,
+    },
+    documents: caseData.documents,
+    findings: caseData.findings,
+    createdAt: caseData.createdAt,
+    updatedAt: caseData.updatedAt,
+  };
+}

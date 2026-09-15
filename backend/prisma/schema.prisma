@@ -1,0 +1,128 @@
+// ============================================================================
+// CERTIKUS — Schema de base de datos
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// TABLA: users
+// ============================================================================
+model User {
+  id                   String    @id @default(uuid()) @db.Uuid
+  nombre               String    @db.VarChar(200)
+  email                String    @unique @db.VarChar(200)
+  passwordHash         String    @map("password_hash") @db.VarChar(255)
+  tipoUsuario          String    @map("tipo_usuario") @db.VarChar(20)
+  plan                 String    @default("free") @db.VarChar(20)
+  creditosDisponibles  Int       @default(1) @map("creditos_disponibles")
+  emailVerified        Boolean   @default(false) @map("email_verified")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  cases                Case[]
+
+  @@map("users")
+}
+
+// ============================================================================
+// TABLA: cases
+// ============================================================================
+model Case {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  nombre         String    @db.VarChar(200)
+  tipoOperacion  String?   @map("tipo_operacion") @db.VarChar(50)
+  estado         String    @default("draft") @db.VarChar(20)
+  consistencia   Int?
+  criticals      Int       @default(0)
+  reviews        Int       @default(0)
+  oks            Int       @default(0)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents      Document[]
+  findings       Finding[]
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@map("cases")
+}
+
+// ============================================================================
+// TABLA: documents
+// ============================================================================
+model Document {
+  id                    String    @id @default(uuid()) @db.Uuid
+  caseId                String    @map("case_id") @db.Uuid
+  tipo                  String    @db.VarChar(30)
+  filename              String    @db.VarChar(255)
+  storagePath           String    @map("storage_path") @db.VarChar(500)
+  mimeType              String    @map("mime_type") @db.VarChar(100)
+  sizeBytes             BigInt    @map("size_bytes")
+  extractionStatus      String    @default("pending") @map("extraction_status") @db.VarChar(20)
+  extractionConfidence  Int?      @map("extraction_confidence")
+  rawExtraction         Json?     @map("raw_extraction")
+  uploadedAt            DateTime  @default(now()) @map("uploaded_at") @db.Timestamptz
+
+  case                  Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  extractedData         ExtractedData[]
+
+  @@index([caseId])
+  @@map("documents")
+}
+
+// ============================================================================
+// TABLA: extracted_data
+// ============================================================================
+model ExtractedData {
+  id          String    @id @default(uuid()) @db.Uuid
+  documentId  String    @map("document_id") @db.Uuid
+  fieldName   String    @map("field_name") @db.VarChar(100)
+  fieldValue  String?   @map("field_value") @db.Text
+  fieldType   String    @map("field_type") @db.VarChar(20)
+  confidence  Int?
+  pageNumber  Int?      @map("page_number")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([fieldName])
+  @@map("extracted_data")
+}
+
+// ============================================================================
+// TABLA: findings
+// ============================================================================
+model Finding {
+  id           String    @id @default(uuid()) @db.Uuid
+  caseId       String    @map("case_id") @db.Uuid
+  reglaId      String    @map("regla_id") @db.VarChar(10)
+  severity     String    @db.VarChar(20)
+  titulo       String    @db.VarChar(200)
+  descripcion  String    @db.Text
+  docAId       String?   @map("doc_a_id") @db.Uuid
+  docAPage     Int?      @map("doc_a_page")
+  docAField    String?   @map("doc_a_field") @db.VarChar(100)
+  docAValue    String?   @map("doc_a_value") @db.Text
+  docBId       String?   @map("doc_b_id") @db.Uuid
+  docBPage     Int?      @map("doc_b_page")
+  docBField    String?   @map("doc_b_field") @db.VarChar(100)
+  docBValue    String?   @map("doc_b_value") @db.Text
+  razon        String    @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  case         Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([severity])
+  @@map("findings")
+}
