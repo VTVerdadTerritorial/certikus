@@ -1,10 +1,10 @@
 import type { Rule, RuleContext, RuleResult } from '../../types/rules.types';
 
 // ============================================================================
-// CERTIKUS v1.0 — Núcleo de 11 reglas activas
+// CERTIKUS v1.0 — Núcleo de 12 reglas activas
 // ============================================================================
-// Activas (11): R01, R02, R03, R04, R06, R07, R08, R09, R10, R13, R16
-// Diferidas (6): R05, R11, R12, R14, R15, R17
+// Activas (12): R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R13, R16
+// Diferidas (5): R11, R12, R14, R15, R17
 // Las diferidas se activarán tras el piloto real con feedback de usuarios.
 // ============================================================================
 
@@ -12,6 +12,7 @@ import { R01_Matricula } from './reglas/R01_matricula';
 import { R02_Titular } from './reglas/R02_titular';
 import { R03_Area } from './reglas/R03_area';
 import { R04_Vigencia } from './reglas/R04_vigencia';
+import { R05_FalsaTradicion } from './reglas/R05_falsa_tradicion';
 import { R06_Legibilidad } from './reglas/R06_legibilidad';
 import { R07_Linderos } from './reglas/R07_linderos';
 
@@ -29,6 +30,7 @@ export const ALL_RULES: Rule[] = [
   R02_Titular,
   R03_Area,
   R04_Vigencia,
+  R05_FalsaTradicion,
   R06_Legibilidad,
   R07_Linderos,
   R08_TituloAntecedente,
