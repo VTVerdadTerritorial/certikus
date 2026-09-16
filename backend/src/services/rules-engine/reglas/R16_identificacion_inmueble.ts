@@ -15,6 +15,43 @@ function normalizarDireccion(dir: string): string {
     .trim();
 }
 
+// Palabras que NO aportan valor para comparar direcciones (artículos,
+// preposiciones, conectores). Ej: "LAS PIEDRAS O GUINDAS" → {piedras, guindas}
+const PALABRAS_DIRECCION_IGNORADAS = new Set([
+  'de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'o', 'u',
+  'en', 'con', 'por', 'para', 'al', 'a', 'un', 'una', 'unos', 'unas',
+  'vereda', 'municipio', 'corregimiento', 'seccion', 'sector',
+  'departamento', 'calle', 'carrera', 'cra', 'cl', 'av', 'avenida',
+  'diagonal', 'transversal', 'km', 'kilometro', 'numero', 'no',
+]);
+
+function tokensDireccion(dir: string): Set<string> {
+  const normalizado = normalizarDireccion(dir);
+  return new Set(
+    normalizado
+      .split(' ')
+      .filter((p) => p.length > 2 && !PALABRAS_DIRECCION_IGNORADAS.has(p))
+  );
+}
+
+// Determina si dos direcciones se refieren al mismo lugar.
+// Criterio: al menos 1 token significativo en común.
+// Esto tolera variaciones como:
+//   "LAS PIEDRAS O GUINDAS" vs "LAS PIEDRAS"  → comparten "piedras"
+//   "VEREDA SAN ANTONIO, BUESACO" vs "SAN ANTONIO" → comparten "antonio"
+function sonMismaDireccion(a: string, b: string): boolean {
+  const tokensA = tokensDireccion(a);
+  const tokensB = tokensDireccion(b);
+  // Si alguno no tiene tokens (direcciones muy cortas), comparar normalizado exacto
+  if (tokensA.size === 0 || tokensB.size === 0) {
+    return normalizarDireccion(a) === normalizarDireccion(b);
+  }
+  for (const t of tokensA) {
+    if (tokensB.has(t)) return true;
+  }
+  return false;
+}
+
 export const R16_IdentificacionInmueble: Rule = {
   id: 'R16',
   nombre: 'Identificación del inmueble en escritura',
@@ -63,14 +100,10 @@ export const R16_IdentificacionInmueble: Rule = {
 
     if (certificado && esc.direccion_inmueble) {
       const certDir = certificado.rawExtraction?.certificado?.direccion_inmueble;
-      if (certDir) {
-        const dirEscNorm = normalizarDireccion(esc.direccion_inmueble);
-        const dirCertNorm = normalizarDireccion(certDir);
-        if (dirEscNorm !== dirCertNorm) {
-          problemas.push(
-            `Direcciones diferentes: Escritura "${esc.direccion_inmueble}" vs Certificado "${certDir}"`
-          );
-        }
+      if (certDir && !sonMismaDireccion(esc.direccion_inmueble, certDir)) {
+        problemas.push(
+          `Direcciones diferentes: Escritura "${esc.direccion_inmueble}" vs Certificado "${certDir}"`
+        );
       }
     }
 
