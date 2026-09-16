@@ -1,38 +1,41 @@
 import type { Rule, RuleContext, RuleResult } from '../../types/rules.types';
 
 // ============================================================================
-// REGLAS DE ALTA CONFIANZA (10 reglas)
+// CERTIKUS v1.0 — Núcleo de 11 reglas activas
 // ============================================================================
-// Las reglas R02, R07, R10, R12, R13, R16 y R17 quedan desactivadas
-// temporalmente hasta que se refinen sus algoritmos de comparación.
-// Se reactivarán progresivamente con feedback de usuarios reales.
+// Activas (11): R01, R02, R03, R04, R06, R07, R08, R09, R10, R13, R16
+// Diferidas (6): R05, R11, R12, R14, R15, R17
+// Las diferidas se activarán tras el piloto real con feedback de usuarios.
 // ============================================================================
 
 import { R01_Matricula } from './reglas/R01_matricula';
+import { R02_Titular } from './reglas/R02_titular';
 import { R03_Area } from './reglas/R03_area';
 import { R04_Vigencia } from './reglas/R04_vigencia';
-import { R05_FalsaTradicion } from './reglas/R05_falsa_tradicion';
 import { R06_Legibilidad } from './reglas/R06_legibilidad';
+import { R07_Linderos } from './reglas/R07_linderos';
 
 import {
   R08_TituloAntecedente,
   R09_NaturalezaActo,
-  R11_CedulasConsistentes,
-  R14_AreaPositiva,
-  R15_EstadoFolio,
+  R10_DocsIdentidad,
+  R13_NotariaValida,
 } from './reglas/R08_R15_consolidadas';
+
+import { R16_IdentificacionInmueble } from './reglas/R16_identificacion_inmueble';
 
 export const ALL_RULES: Rule[] = [
   R01_Matricula,
+  R02_Titular,
   R03_Area,
   R04_Vigencia,
-  R05_FalsaTradicion,
   R06_Legibilidad,
+  R07_Linderos,
   R08_TituloAntecedente,
   R09_NaturalezaActo,
-  R11_CedulasConsistentes,
-  R14_AreaPositiva,
-  R15_EstadoFolio,
+  R10_DocsIdentidad,
+  R13_NotariaValida,
+  R16_IdentificacionInmueble,
 ];
 
 // ============================================================================
