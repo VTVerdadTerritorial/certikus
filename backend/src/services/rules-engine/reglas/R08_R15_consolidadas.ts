@@ -94,17 +94,73 @@ export const R09_NaturalezaActo: Rule = {
 };
 
 // ============================================================================
-// R10 — Documentos de identidad
+// R10 — Documentos de identidad (ACTIVA)
 // ============================================================================
+// Valida que estén las cédulas requeridas según el tipo de acto:
+//   · Actos bilaterales (compraventa, permuta, donación, hipoteca, etc.)
+//     → requieren cédula del vendedor/tradente Y del comprador/adquirente.
+//   · Actos unilaterales o indeterminados → al menos una cédula.
+// ============================================================================
+const ACTOS_BILATERALES = [
+  'compraventa', 'permuta', 'donacion', 'hipoteca',
+  'usufructo', 'servidumbre', 'fiducia',
+];
+
 export const R10_DocsIdentidad: Rule = {
   id: 'R10',
   nombre: 'Documentos de identidad',
   evaluar: (ctx: RuleContext): RuleResult => {
-    const { otrosDocumentos } = ctx;
-    const tieneCedulas = otrosDocumentos.some(
-      (d) => d.tipo === 'cedula_vendedor' || d.tipo === 'cedula_comprador'
+    const { escritura, otrosDocumentos } = ctx;
+
+    const tieneCedulaVendedor = otrosDocumentos.some(
+      (d) => d.tipo === 'cedula_vendedor'
     );
-    if (tieneCedulas) {
+    const tieneCedulaComprador = otrosDocumentos.some(
+      (d) => d.tipo === 'cedula_comprador'
+    );
+    const totalCedulas = (tieneCedulaVendedor ? 1 : 0) + (tieneCedulaComprador ? 1 : 0);
+
+    // Determinar si el acto es bilateral
+    const naturaleza = (
+      escritura?.rawExtraction?.escritura?.naturaleza_acto || ''
+    ).toLowerCase();
+    const esActoBilateral = ACTOS_BILATERALES.some((a) => naturaleza.includes(a));
+
+    // Caso A — Acto bilateral con AMBAS cédulas → OK
+    if (esActoBilateral && tieneCedulaVendedor && tieneCedulaComprador) {
+      return {
+        reglaId: 'R10', severity: 'ok',
+        titulo: 'Documentos de identidad',
+        descripcion: 'Se aportaron las cédulas de ambas partes (vendedor y comprador).',
+        razon: 'Los documentos de identidad de ambas partes permiten validar el tracto sucesivo con precisión.',
+      };
+    }
+
+    // Caso B — Acto bilateral con UNA sola cédula → REVIEW
+    if (esActoBilateral && totalCedulas === 1) {
+      const falta = !tieneCedulaVendedor
+        ? 'del vendedor/tradente'
+        : 'del comprador/adquirente';
+      return {
+        reglaId: 'R10', severity: 'review',
+        titulo: 'Documento de identidad faltante',
+        descripcion: `Se aportó solo una cédula. Falta la cédula ${falta}.`,
+        razon: `En un acto de ${naturaleza || 'transmisión de dominio'}, se requieren las cédulas de ambas partes para validar los comparecientes (Art. 3 Ley 1579 de 2012).`,
+      };
+    }
+
+    // Caso C — Acto bilateral SIN cédulas → REVIEW
+    if (esActoBilateral && totalCedulas === 0) {
+      return {
+        reglaId: 'R10', severity: 'review',
+        titulo: 'Documentos de identidad no aportados',
+        descripcion: `No se aportaron cédulas de las partes del acto de ${naturaleza}.`,
+        razon: 'Sin documentos de identidad no es posible validar los comparecientes.',
+      };
+    }
+
+    // Caso D — Acto no bilateral (o indeterminado) con al menos una cédula → OK
+    if (totalCedulas >= 1) {
       return {
         reglaId: 'R10', severity: 'ok',
         titulo: 'Documentos de identidad',
@@ -112,11 +168,13 @@ export const R10_DocsIdentidad: Rule = {
         razon: 'Los documentos de identidad permiten validar los comparecientes.',
       };
     }
+
+    // Caso E — Sin cédulas → REVIEW
     return {
       reglaId: 'R10', severity: 'review',
       titulo: 'Documentos de identidad no aportados',
       descripcion: 'No se cargaron cédulas de las partes.',
-      razon: 'Sin documentos de identidad no es posible validar tracto sucesivo con precisión. Aunque no es obligatorio para radicación, su ausencia limita el análisis.',
+      razon: 'Sin documentos de identidad no es posible validar los comparecientes.',
     };
   },
 };
