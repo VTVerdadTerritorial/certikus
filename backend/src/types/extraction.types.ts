@@ -69,5 +69,16 @@ export interface ExtractionResult {
   certificado: DatosCertificado | null;
   confidence: number;
   notas_legibilidad: string | null;
-  tipo_detectado: 'escritura' | 'certificado' | 'otro' | null;
+  tipo_detectado:
+    | 'escritura'
+    | 'certificado'
+    | 'cedula'
+    | 'poder'
+    | 'camara_comercio'
+    | 'paz_salvo_predial'
+    | 'paz_salvo_valorizacion'
+    | 'certificado_catastral'
+    | 'adicional'
+    | 'otro'
+    | null;
 }

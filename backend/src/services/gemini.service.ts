@@ -117,6 +117,25 @@ Cuando el documento sea un CERTIFICADO DE TRADICIÓN:
    · Ej: "LAS PIEDRAS"
 
 ═══════════════════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════════════════
+INSTRUCCIONES DE CLASIFICACION (campo "tipo_detectado")
+═══════════════════════════════════════════════════════════════════════════
+
+Clasifica el documento en UNO de estos tipos:
+
+- "escritura": Escritura publica notarial (compraventa, hipoteca, etc.)
+- "certificado": Certificado de tradicion y libertad del folio de matricula (ORIP/SNR)
+- "cedula": Cedula de ciudadania colombiana (fisica o digital, anverso y reverso)
+- "poder": Poder notarial otorgado por una parte a un apoderado
+- "camara_comercio": Certificado de existencia y representacion legal de una empresa (Camara de Comercio)
+- "paz_salvo_predial": Paz y salvo del impuesto predial municipal
+- "paz_salvo_valorizacion": Paz y salvo de contribucion por valorizacion
+- "certificado_catastral": Certificado catastral del IGAC o municipal
+- "adicional": Otros documentos relacionados con el tramite registral (promesa de compraventa, reglamento de propiedad horizontal, licencia de construccion, etc.)
+- "otro": Documentos NO relacionados con el tramite registral (carnes, licencias de conduccion, diplomas, recibos de servicios, etc.)
+
+REGLA CRITICA: Si el documento NO esta relacionado con un tramite inmobiliario/registral (carnes, diplomas, licencias de conduccion, extractos bancarios, etc.), clasificalo como "otro". CERTIKUS solo acepta documentos prediales/registrales.
+
 ESTRUCTURA DEL JSON DE SALIDA
 ═══════════════════════════════════════════════════════════════════════════
 
@@ -124,7 +143,7 @@ ESTRUCTURA DEL JSON DE SALIDA
   "matricula_inmobiliaria": "string o null",
   "fecha_documento": "YYYY-MM-DD o null",
   "notaria": "string o null",
-  "tipo_detectado": "escritura | certificado | otro | null",
+  "tipo_detectado": "escritura | certificado | cedula | poder | camara_comercio | paz_salvo_predial | paz_salvo_valorizacion | certificado_catastral | adicional | otro | null",
   "escritura": {
     "numero_escritura": "string o null",
     "fecha_escritura": "YYYY-MM-DD o null",

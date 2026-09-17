@@ -106,6 +106,72 @@ export async function analyzeCase(
       );
     }
 
+    // 3.6 — R18: Verificar que cada documento este en el slot correcto
+    // Mapeo: slot de subida -> tipo esperado que debe detectar el OCR
+    const SLOT_A_TIPO_ESPERADO: Record<string, string> = {
+      escritura: 'escritura',
+      certificado: 'certificado',
+      cedula_vendedor: 'cedula',
+      cedula_comprador: 'cedula',
+      poder: 'poder',
+      camara_comercio: 'camara_comercio',
+      paz_salvo_predial: 'paz_salvo_predial',
+      paz_salvo_valorizacion: 'paz_salvo_valorizacion',
+      certificado_catastral: 'certificado_catastral',
+      adicional: 'adicional',
+    };
+
+    const NOMBRES_AMIGABLES: Record<string, string> = {
+      escritura: 'escritura publica',
+      certificado: 'certificado de tradicion y libertad',
+      cedula: 'cedula de ciudadania',
+      poder: 'poder notarial',
+      camara_comercio: 'certificado de camara de comercio',
+      paz_salvo_predial: 'paz y salvo predial',
+      paz_salvo_valorizacion: 'paz y salvo de valorizacion',
+      certificado_catastral: 'certificado catastral',
+      adicional: 'documento adicional del tramite',
+      otro: 'documento NO relacionado con el tramite registral',
+    };
+
+    const documentosMalUbicados: string[] = [];
+
+    for (const doc of documentosExtraidos) {
+      const tipoEsperado = SLOT_A_TIPO_ESPERADO[doc.tipo];
+      const tipoDetectado = doc.rawExtraction?.tipo_detectado;
+
+      if (!tipoEsperado) continue;
+
+      // Documento clasificado como "otro" -> rechazo siempre
+      if (tipoDetectado === 'otro') {
+        documentosMalUbicados.push(
+          `"${doc.filename}" fue subido como "${NOMBRES_AMIGABLES[tipoEsperado]}" pero CERTIKUS detecto que NO es un documento relacionado con el tramite registral`
+        );
+        continue;
+      }
+
+      // Tipo detectado no coincide con el esperado -> rechazo
+      if (tipoDetectado && tipoDetectado !== tipoEsperado) {
+        documentosMalUbicados.push(
+          `"${doc.filename}" fue subido como "${NOMBRES_AMIGABLES[tipoEsperado]}" pero CERTIKUS detecto que es "${NOMBRES_AMIGABLES[tipoDetectado] || tipoDetectado}"`
+        );
+      }
+    }
+
+    if (documentosMalUbicados.length > 0) {
+      await prisma.case.update({
+        where: { id: caseId },
+        data: { estado: 'failed' },
+      });
+
+      const detalle = documentosMalUbicados.join('. ');
+      throw new DocumentError(
+        'DOCUMENT_WRONG_SLOT',
+        `CERTIKUS detecto documentos en el sitio incorrecto: ${detalle}. Por favor, sube cada documento en el sitio correcto e intenta de nuevo.`,
+        422
+      );
+    }
+
     // 4. Clasificar documentos
     const escritura = documentosExtraidos.find((d) => d.tipo === 'escritura') || null;
     const certificado = documentosExtraidos.find((d) => d.tipo === 'certificado') || null;
