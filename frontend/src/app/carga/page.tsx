@@ -29,6 +29,10 @@ import {
 } from 'lucide-react';
 import { casesApi, documentsApi } from '@/lib/api-client';
 
+// Tipos de archivo aceptados (contexto colombiano: PDF, JPG, PNG)
+const ACCEPT_TYPES = 'application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png';
+const MIMES_VALIDOS = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+
 type DocId =
   | 'escritura'
   | 'certificado'
@@ -534,7 +538,7 @@ function AdicionalesSection({ files, onAdd, onRemove }: AdicionalesSectionProps)
     e.stopPropagation();
     setIsDragActive(false);
     const dropped = Array.from(e.dataTransfer.files).filter(
-      (f) => f.type === 'application/pdf'
+      (f) => MIMES_VALIDOS.includes(f.type)
     );
     if (dropped.length > 0) onAdd(dropped);
   };
@@ -585,7 +589,7 @@ function AdicionalesSection({ files, onAdd, onRemove }: AdicionalesSectionProps)
             <input
               ref={inputRef}
               type="file"
-              accept="application/pdf,.pdf"
+              accept={ACCEPT_TYPES}
               multiple
               onChange={handleChange}
               className="hidden"
@@ -673,7 +677,7 @@ function FileSlot({ doc, file, onFile, onRemove }: FileSlotProps) {
     e.stopPropagation();
     setIsDragActive(false);
     const dropped = e.dataTransfer.files?.[0];
-    if (dropped && dropped.type === 'application/pdf') {
+    if (dropped && MIMES_VALIDOS.includes(dropped.type)) {
       onFile(dropped);
     }
   };
@@ -728,7 +732,7 @@ function FileSlot({ doc, file, onFile, onRemove }: FileSlotProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf,.pdf"
+        accept={ACCEPT_TYPES}
         onChange={handleChange}
         className="hidden"
       />
