@@ -143,6 +143,72 @@ CLASIFICACION DEL TIPO DE CEDULA (campo "tipo_cedula"):
 REGLA: Si el documento NO es una cedula colombiana (ej. cedula de extranjeria, pasaporte,
 tarjeta de identidad), deja tipo_cedula en null y clasifica el documento como "otro".
 
+═══════════════════════════════════════════════════════════════════════════
+INSTRUCCIONES ESPECIFICAS PARA PAZ Y SALVO (PREDIAL O VALORIZACION)
+═══════════════════════════════════════════════════════════════════════════
+
+Cuando el documento sea un PAZ Y SALVO (municipal, predial o de valorizacion),
+llena el objeto "paz_salvo" con estos datos:
+
+1. tipo: "predial" | "valorizacion" | "otro" | null
+   · "predial" si menciona "impuesto predial", "predial unificado", "paz y salvo predial"
+   · "valorizacion" si menciona "valorizacion" o "contribucion por valorizacion"
+   · "otro" si es un paz y salvo de otro concepto
+
+2. entidad_emisora: Alcaldia o entidad que lo expide.
+   · Ejemplo: "Alcaldia Municipal de Buesaco" -> "Alcaldia Municipal de Buesaco"
+   · Si dice "Tesoreria Municipal de Buesaco" tambien se acepta.
+
+3. numero_paz_salvo: Numero o radicado del paz y salvo.
+   · Ejemplo: "Paz y Salvo No. 13781" -> "13781"
+   · Si no aparece, dejar null.
+
+4. propietario: Nombre completo del propietario a quien se expide.
+   · Ejemplo: "JUAN BAUTISTA MONCAYO MONCAYO"
+
+5. numero_documento_propietario: Cedula o NIT del propietario SIN puntos.
+   · Ejemplo: "2.771.580" -> "2771580"
+   · Ejemplo: "000002771580" -> "2771580"
+
+6. codigo_predial: Codigo predial municipal.
+   · Ejemplo: "000200180074000"
+   · Puede tener 15 o mas digitos. Mantener tal cual sin ceros adicionales.
+   · Si aparece "No. Pred. Nac." o "Numero Predial Nacional" usar ese.
+
+7. numero_predial_nacional: Codigo predial nacional (30 digitos aproximadamente).
+   · Ejemplo: "52110000200000018007400000000"
+
+8. direccion: Direccion o nombre del predio.
+   · Ejemplo: "GUINDAS"
+
+9. vereda: Vereda o corregimiento.
+   · Ejemplo: "San Antonio"
+
+10. municipio: Municipio donde esta el predio.
+    · Ejemplo: "Buesaco"
+
+11. area_m2: Area total del predio en metros cuadrados.
+    · Puede venir como "8 HC + 4668 m2" -> convertir a 84668
+    · 1 HC (hectarea) = 10.000 m2
+
+12. avaluo: Avaluo catastral en pesos colombianos (solo numero).
+    · Ejemplo: "$17,614,000" -> 17614000
+
+13. ultimo_ano_pago: Ultimo ano pagado del impuesto.
+    · Ejemplo: "2025" -> 2025
+
+14. fecha_expedicion: Fecha de expedicion del paz y salvo (YYYY-MM-DD).
+
+15. valido_hasta: Fecha de vigencia del paz y salvo (YYYY-MM-DD).
+    · Buscar frases como "Valido hasta", "Vigente hasta", "Vence el".
+    · IMPORTANTE: Si no aparece este campo, dejar null.
+    · Ejemplo: "Valido hasta 2025-10-16" -> "2025-10-16"
+
+REGLA: Si el documento es una LIQUIDACION (factura) de impuesto predial,
+NO es un paz y salvo en si mismo, pero puede usarse como soporte. Clasificar
+el documento como "paz_salvo_predial" solo si es el paz y salvo emitido por la
+tesoreria, no la liquidacion.
+
 INSTRUCCIONES ESPECÍFICAS PARA CERTIFICADO DE TRADICIÓN Y LIBERTAD
 ═══════════════════════════════════════════════════════════════════════════
 
@@ -238,6 +304,23 @@ ESTRUCTURA DEL JSON DE SALIDA
     "coeficiente_copropiedad": number o null,
     "bienes_privados": ["array de strings"] o null,
     "bienes_comunes": ["array de strings"] o null
+  } o null,
+  "paz_salvo": {
+    "tipo": "predial | valorizacion | otro | null",
+    "entidad_emisora": "string o null",
+    "numero_paz_salvo": "string o null",
+    "propietario": "string o null",
+    "numero_documento_propietario": "string o null",
+    "codigo_predial": "string o null",
+    "numero_predial_nacional": "string o null",
+    "direccion": "string o null",
+    "vereda": "string o null",
+    "municipio": "string o null",
+    "area_m2": number o null,
+    "avaluo": number o null,
+    "ultimo_ano_pago": number o null,
+    "fecha_expedicion": "YYYY-MM-DD o null",
+    "valido_hasta": "YYYY-MM-DD o null"
   } o null,
   "cedula": {
     "tipo_cedula": "cedula_amarilla | cedula_digital_fisica | cedula_digital_app | null",

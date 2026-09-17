@@ -43,6 +43,24 @@ export interface DatosEscritura {
   bienes_comunes: string[] | null;
 }
 
+export interface DatosPazSalvo {
+  tipo: 'predial' | 'valorizacion' | 'otro' | null;
+  entidad_emisora: string | null;
+  numero_paz_salvo: string | null;
+  propietario: string | null;
+  numero_documento_propietario: string | null;
+  codigo_predial: string | null;
+  numero_predial_nacional: string | null;
+  direccion: string | null;
+  vereda: string | null;
+  municipio: string | null;
+  area_m2: number | null;
+  avaluo: number | null;
+  ultimo_ano_pago: number | null;
+  fecha_expedicion: string | null;
+  valido_hasta: string | null;
+}
+
 export interface DatosCedula {
   tipo_cedula: 'cedula_amarilla' | 'cedula_digital_fisica' | 'cedula_digital_app' | null;
   nombre_completo: string | null;
@@ -77,6 +95,7 @@ export interface ExtractionResult {
   fecha_documento: string | null;
   notaria: string | null;
   escritura: DatosEscritura | null;
+  paz_salvo: DatosPazSalvo | null;
   cedula: DatosCedula | null;
   certificado: DatosCertificado | null;
   confidence: number;
