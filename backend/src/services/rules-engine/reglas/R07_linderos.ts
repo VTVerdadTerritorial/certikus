@@ -1,9 +1,85 @@
 import type { Rule, RuleContext, RuleResult } from '../../../types/rules.types';
 
-function extraerPuntosCardinales(texto: string): string[] {
-  const normalized = texto.toLowerCase();
-  const puntos = ['norte', 'sur', 'oriente', 'occidente', 'este', 'oeste'];
-  return puntos.filter((p) => normalized.includes(p));
+// ============================================================================
+// R07 — Coincidencia de linderos (reformulada)
+// Fundamento: Art. 16 Par. 1 Ley 1579 de 2012 + Art. 31 Decreto 960 de 1970
+// ============================================================================
+// Compara los linderos por PUNTO CARDINAL y COLINDANTE, no solo por la
+// presencia de las palabras. Un lindero sin colindante no identifica el predio.
+// ============================================================================
+
+const PUNTOS_CARDINALES = ['norte', 'sur', 'oriente', 'occidente', 'este', 'oeste'];
+
+// Normaliza un texto: minusculas, sin tildes, espacios simples.
+function normalizar(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[.,;:()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Extrae pares {punto: colindante} de un texto de linderos.
+// Ejemplo: "Por el NORTE con Marcos Moncayo, por el SUR con Julio..."
+//   -> { norte: "marcos moncayo", sur: "julio..." }
+function extraerLinderos(texto: string): Record<string, string> {
+  const resultado: Record<string, string> = {};
+  const t = normalizar(texto);
+
+  for (const punto of PUNTOS_CARDINALES) {
+    // Buscar el punto cardinal y capturar el texto siguiente (hasta el proximo punto cardinal o fin)
+    const idx = t.indexOf(punto);
+    if (idx === -1) continue;
+
+    const desde = idx + punto.length;
+    let hasta = t.length;
+    for (const otro of PUNTOS_CARDINALES) {
+      if (otro === punto) continue;
+      const idxOtro = t.indexOf(otro, desde);
+      if (idxOtro !== -1 && idxOtro < hasta) hasta = idxOtro;
+    }
+
+    let colindante = t.substring(desde, hasta).trim();
+    // Limpiar prefijos comunes: "con", "con propiedades de", "propiedades del", "colinda con"
+    colindante = colindante
+      .replace(/^(con |con propiedades (de |del |de la )?|propiedades (de |del |de la )?|colinda con |linda con |y )+/, '')
+      .trim();
+
+    if (colindante.length > 2) {
+      resultado[punto] = colindante;
+    }
+  }
+  return resultado;
+}
+
+// Extrae las palabras significativas de un colindante para comparar.
+const PALABRAS_IGNORADAS = new Set([
+  'de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'o', 'u', 'al',
+  'senor', 'senora', 'don', 'dona', 'herederos', 'sucesion',
+]);
+
+function palabrasColindante(texto: string): Set<string> {
+  return new Set(
+    normalizar(texto)
+      .split(' ')
+      .filter((p) => p.length > 2 && !PALABRAS_IGNORADAS.has(p))
+  );
+}
+
+// Determina si dos colindantes se refieren a la misma persona/predio.
+function mismoColindante(a: string, b: string): boolean {
+  const pa = palabrasColindante(a);
+  const pb = palabrasColindante(b);
+  if (pa.size === 0 || pb.size === 0) {
+    return normalizar(a) === normalizar(b);
+  }
+  // Al menos 1 palabra significativa en comun
+  for (const p of pa) {
+    if (pb.has(p)) return true;
+  }
+  return false;
 }
 
 export const R07_Linderos: Rule = {
@@ -22,44 +98,92 @@ export const R07_Linderos: Rule = {
     const linderosEscritura = escritura.rawExtraction?.escritura?.linderos || null;
     const linderosCertificado = certificado.rawExtraction?.certificado?.linderos || null;
 
+    // Caso 1 — Sin linderos en NINGUNO: incumple Art. 16 Ley 1579 (critical)
+    if (!linderosEscritura && !linderosCertificado) {
+      return {
+        reglaId: 'R07', severity: 'critical',
+        titulo: 'Linderos no identificados en ningun documento',
+        descripcion: 'Ni la escritura ni el certificado contienen linderos del inmueble.',
+        docAId: escritura.id, docAField: 'Linderos',
+        docAValue: 'NO DETECTADO',
+        docBId: certificado.id, docBField: 'Linderos',
+        docBValue: 'NO DETECTADO',
+        razon: 'El Art. 16 Par. 1 de la Ley 1579 exige que el inmueble este identificado por linderos. Sin ellos no se puede verificar la delimitacion.',
+      };
+    }
+
+    // Caso 2 — Solo uno tiene linderos: review (no es critico pero limita el analisis)
     if (!linderosEscritura || !linderosCertificado) {
       return {
-        reglaId: 'R07', severity: 'illegible',
-        titulo: 'Coincidencia de linderos',
-        descripcion: 'No se pudieron extraer linderos de uno o ambos documentos.',
+        reglaId: 'R07', severity: 'review',
+        titulo: 'Linderos incompletos',
+        descripcion: 'Solo uno de los dos documentos contiene linderos del inmueble.',
         docAId: escritura.id, docAField: 'Linderos',
         docAValue: linderosEscritura || 'NO DETECTADO',
         docBId: certificado.id, docBField: 'Linderos',
         docBValue: linderosCertificado || 'NO DETECTADO',
-        razon: 'Sin linderos en ambos documentos no es posible validar la delimitación (Art. 16 Par. 1 Ley 1579).',
+        razon: 'Se recomienda contar con linderos en ambos documentos para validar la delimitacion (Art. 16 Par. 1 Ley 1579).',
       };
     }
-    const puntosEscritura = extraerPuntosCardinales(linderosEscritura);
-    const puntosCertificado = extraerPuntosCardinales(linderosCertificado);
-    const puntosFaltantes = puntosCertificado.filter(
-      (p) => !puntosEscritura.includes(p)
-    );
-    if (puntosFaltantes.length === 0) {
+
+    // Caso 3 — Ambos tienen linderos: comparar colindantes por punto cardinal
+    const linderosA = extraerLinderos(linderosEscritura);
+    const linderosB = extraerLinderos(linderosCertificado);
+
+    const puntosA = Object.keys(linderosA);
+    const puntosB = Object.keys(linderosB);
+    const puntosComunes = puntosA.filter((p) => puntosB.includes(p));
+
+    // Si no hay puntos comunes, no podemos comparar (review)
+    if (puntosComunes.length === 0) {
+      return {
+        reglaId: 'R07', severity: 'review',
+        titulo: 'Linderos sin puntos cardinales coincidentes',
+        descripcion: 'La escritura y el certificado describen linderos, pero sin puntos cardinales en comun para comparar.',
+        docAId: escritura.id, docAField: 'Linderos',
+        docAValue: puntosA.join(', ') || 'Sin puntos cardinales',
+        docBId: certificado.id, docBField: 'Linderos',
+        docBValue: puntosB.join(', ') || 'Sin puntos cardinales',
+        razon: 'Verifica manualmente que los linderos describan la misma delimitacion. Art. 31 Decreto 960 de 1970.',
+      };
+    }
+
+    // Comparar colindantes en los puntos comunes
+    const coincidencias: string[] = [];
+    const discrepancias: string[] = [];
+
+    for (const punto of puntosComunes) {
+      if (mismoColindante(linderosA[punto], linderosB[punto])) {
+        coincidencias.push(punto);
+      } else {
+        discrepancias.push(punto);
+      }
+    }
+
+    // OK si TODOS los puntos comunes coinciden
+    if (discrepancias.length === 0) {
       return {
         reglaId: 'R07', severity: 'ok',
         titulo: 'Coincidencia de linderos',
-        descripcion: 'Los puntos cardinales de los linderos coinciden.',
+        descripcion: 'Los colindantes coinciden en los puntos cardinales comparables (' + coincidencias.length + ' de ' + puntosComunes.length + ').',
         docAId: escritura.id, docAField: 'Linderos',
-        docAValue: puntosEscritura.join(', ') || 'Sin puntos cardinales',
+        docAValue: puntosComunes.map((p) => p + ': ' + linderosA[p]).join(' | '),
         docBId: certificado.id, docBField: 'Linderos',
-        docBValue: puntosCertificado.join(', ') || 'Sin puntos cardinales',
-        razon: 'Los linderos referencian los mismos puntos cardinales.',
+        docBValue: puntosComunes.map((p) => p + ': ' + linderosB[p]).join(' | '),
+        razon: 'Los linderos referencian los mismos colindantes en cada punto cardinal (Art. 16 Par. 1 Ley 1579).',
       };
     }
+
+    // REVIEW si hay discrepancias
     return {
       reglaId: 'R07', severity: 'review',
-      titulo: 'Inconsistencia en linderos',
-      descripcion: 'Faltan puntos cardinales en la escritura que sí aparecen en el certificado.',
+      titulo: 'Linderos con colindantes inconsistentes',
+      descripcion: 'Se detectaron diferencias en los colindantes de ' + discrepancias.length + ' punto(s) cardinal(es).',
       docAId: escritura.id, docAField: 'Linderos',
-      docAValue: puntosEscritura.join(', ') || 'Sin puntos cardinales',
+      docAValue: discrepancias.map((p) => p + ': ' + linderosA[p]).join(' | '),
       docBId: certificado.id, docBField: 'Linderos',
-      docBValue: puntosCertificado.join(', ') || 'Sin puntos cardinales',
-      razon: `Puntos faltantes: ${puntosFaltantes.join(', ')}. Verifica antes de radicar.`,
+      docBValue: discrepancias.map((p) => p + ': ' + linderosB[p]).join(' | '),
+      razon: 'Verifica que los colindantes de los puntos ' + discrepancias.join(', ') + ' correspondan al mismo predio. Art. 31 Decreto 960 de 1970.',
     };
   },
 };
