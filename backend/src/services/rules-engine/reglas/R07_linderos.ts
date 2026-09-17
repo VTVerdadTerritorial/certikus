@@ -137,10 +137,12 @@ export const R07_Linderos: Rule = {
     const palabrasB = palabrasSignificativas(linderosNormB);
 
     const comunes = [...palabrasA].filter((p) => palabrasB.has(p));
-    const union = new Set([...palabrasA, ...palabrasB]);
-    const jaccard = union.size > 0 ? comunes.length / union.size : 0;
 
-    if (comunes.length >= 1 && jaccard >= 0.3) {
+    // Criterio: >= 2 palabras significativas comunes (tipicamente nombre + apellido
+    // de un colindante) indican que es el mismo predio. NO usamos Jaccard porque
+    // castiga los documentos con texto adicional legitimo (descripcion, otros
+    // colindantes), y en zonas rurales un colindante puede aparecer en varios puntos.
+    if (comunes.length >= 2) {
       return {
         reglaId: 'R07', severity: 'ok',
         titulo: 'Coincidencia de linderos',
@@ -153,7 +155,7 @@ export const R07_Linderos: Rule = {
       };
     }
 
-    if (comunes.length >= 1) {
+    if (comunes.length === 1) {
       return {
         reglaId: 'R07', severity: 'review',
         titulo: 'Linderos con coincidencia parcial',
