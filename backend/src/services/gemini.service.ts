@@ -85,6 +85,46 @@ Cuando el documento sea una ESCRITURA PÚBLICA:
 5. Para "linderos": copia el texto literal de los linderos.
 
 ═══════════════════════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════════════════
+INSTRUCCIONES ESPECIFICAS PARA CEDULA DE CIUDADANIA
+═══════════════════════════════════════════════════════════════════════════
+
+Cuando el documento sea una CEDULA DE CIUDADANIA colombiana (fisica o digital,
+anverso y reverso), llena el objeto "cedula" con los datos DEL TITULAR.
+
+IMPORTANTE — La cedula tiene 2 fechas que NO debes confundir:
+
+  FECHA DE NACIMIENTO (aparece arriba en la cedula)
+  Ejemplo: "18-OCT-1971"  -> fecha_nacimiento: 1971-10-18
+
+  FECHA DE EXPEDICION (aparece abajo, junto a la ciudad)
+  Ejemplo: "31-JUL-1990 PASTO" -> fecha_expedicion: 1990-07-31, lugar_expedicion: Pasto
+
+Campos a extraer:
+
+1. nombre_completo: NOMBRES + APELLIDOS en orden natural.
+   · La cedula muestra primero los APELLIDOS y luego los NOMBRES
+   · Si ves "CONTRERAS CERON" arriba y "JOHN BRAULIO" abajo,
+     el nombre completo es "JOHN BRAULIO CONTRERAS CERON"
+
+2. numero_documento: Numero de la cedula SIN puntos ni espacios.
+   · "98.381.080" -> "98381080"
+   · "1.085.248.404" -> "1085248404"
+
+3. fecha_nacimiento: Fecha de nacimiento en formato YYYY-MM-DD.
+
+4. fecha_expedicion: Fecha de expedicion en formato YYYY-MM-DD.
+
+5. lugar_nacimiento: Ciudad/municipio de nacimiento (sin departamento si es posible).
+   · "LA UNION (NARINO)" -> "La Union"
+
+6. lugar_expedicion: Ciudad donde se expidio la cedula.
+
+7. sexo: "M" o "F" si aparece.
+
+REGLA CRITICA: NUNCA uses la fecha de nacimiento como fecha_expedicion
+ni viceversa. Son dos campos independientes.
+
 INSTRUCCIONES ESPECÍFICAS PARA CERTIFICADO DE TRADICIÓN Y LIBERTAD
 ═══════════════════════════════════════════════════════════════════════════
 
@@ -180,6 +220,15 @@ ESTRUCTURA DEL JSON DE SALIDA
     "coeficiente_copropiedad": number o null,
     "bienes_privados": ["array de strings"] o null,
     "bienes_comunes": ["array de strings"] o null
+  } o null,
+  "cedula": {
+    "nombre_completo": "string o null",
+    "numero_documento": "string o null",
+    "fecha_nacimiento": "YYYY-MM-DD o null",
+    "lugar_nacimiento": "string o null",
+    "fecha_expedicion": "YYYY-MM-DD o null",
+    "lugar_expedicion": "string o null",
+    "sexo": "M | F | null"
   } o null,
   "certificado": {
     "numero_matricula": "string o null",

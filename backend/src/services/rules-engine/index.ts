@@ -1,9 +1,9 @@
 import type { Rule, RuleContext, RuleResult } from '../../types/rules.types';
 
 // ============================================================================
-// CERTIKUS v1.0 — Núcleo de 12 reglas activas
+// CERTIKUS v1.0 — Núcleo de 13 reglas activas
 // ============================================================================
-// Activas (12): R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R13, R16
+// Activas (13): R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R13, R16, R19
 // Diferidas (5): R11, R12, R14, R15, R17
 // Las diferidas se activarán tras el piloto real con feedback de usuarios.
 // ============================================================================
@@ -24,6 +24,7 @@ import {
 } from './reglas/R08_R15_consolidadas';
 
 import { R16_IdentificacionInmueble } from './reglas/R16_identificacion_inmueble';
+import { R19_CedulaVsTitular } from './reglas/R19_cedula_vs_titular';
 
 export const ALL_RULES: Rule[] = [
   R01_Matricula,
@@ -38,6 +39,7 @@ export const ALL_RULES: Rule[] = [
   R10_DocsIdentidad,
   R13_NotariaValida,
   R16_IdentificacionInmueble,
+  R19_CedulaVsTitular,
 ];
 
 // ============================================================================

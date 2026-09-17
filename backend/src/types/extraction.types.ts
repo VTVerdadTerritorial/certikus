@@ -43,6 +43,16 @@ export interface DatosEscritura {
   bienes_comunes: string[] | null;
 }
 
+export interface DatosCedula {
+  nombre_completo: string | null;
+  numero_documento: string | null;
+  fecha_nacimiento: string | null;
+  lugar_nacimiento: string | null;
+  fecha_expedicion: string | null;
+  lugar_expedicion: string | null;
+  sexo: 'M' | 'F' | null;
+}
+
 export interface DatosCertificado {
   numero_matricula: string | null;
   fecha_expedicion: string | null;
@@ -66,6 +76,7 @@ export interface ExtractionResult {
   fecha_documento: string | null;
   notaria: string | null;
   escritura: DatosEscritura | null;
+  cedula: DatosCedula | null;
   certificado: DatosCertificado | null;
   confidence: number;
   notas_legibilidad: string | null;
