@@ -309,9 +309,14 @@ export const R13_NotariaValida: Rule = {
         razon: 'Se requiere la escritura pública.',
       };
     }
-    const notaria = escritura.rawExtraction?.escritura?.notaria_nombre ||
-      escritura.rawExtraction?.notaria;
-    if (!notaria) {
+    // Recolectar candidatos de notaria (varios campos pueden tenerla)
+    const candidatosNotaria = [
+      escritura.rawExtraction?.escritura?.notaria_nombre,
+      escritura.rawExtraction?.notaria,
+      escritura.rawExtraction?.escritura?.notaria_codigo,
+    ].filter((x): x is string => typeof x === 'string' && x.trim() !== '');
+
+    if (candidatosNotaria.length === 0) {
       return {
         reglaId: 'R13', severity: 'review',
         titulo: 'Notaría no identificada',
@@ -321,25 +326,39 @@ export const R13_NotariaValida: Rule = {
         razon: 'Verifica que la notaría esté correctamente identificada.',
       };
     }
-    const notariaNorm = notaria.toLowerCase();
-    const esValida = /notar[ií]a\s+\d+/.test(notariaNorm) ||
-      notariaNorm.includes('circulo') || notariaNorm.includes('círculo');
-    if (esValida) {
+
+    // Buscar el primer candidato que matchee el formato esperado
+    let notariaValida: string | null = null;
+    for (const cand of candidatosNotaria) {
+      const norm = cand.toLowerCase();
+      const esFormatoValido =
+        /notar[ií]a\s+\d+/.test(norm) ||
+        norm.includes('circulo') ||
+        norm.includes('círculo') ||
+        norm.includes('notarial');
+      if (esFormatoValido) {
+        notariaValida = cand;
+        break;
+      }
+    }
+
+    if (notariaValida) {
       return {
         reglaId: 'R13', severity: 'ok',
         titulo: 'Notaría válida',
         descripcion: 'La notaría tiene formato válido.',
         docAId: escritura.id, docAField: 'Notaría',
-        docAValue: notaria,
+        docAValue: notariaValida,
         razon: 'El formato de la notaría corresponde a la nomenclatura notarial colombiana.',
       };
     }
+
     return {
       reglaId: 'R13', severity: 'review',
       titulo: 'Notaría con formato no reconocido',
       descripcion: 'El nombre de la notaría no corresponde al formato estándar.',
       docAId: escritura.id, docAField: 'Notaría',
-      docAValue: notaria,
+      docAValue: candidatosNotaria[0],
       razon: 'Verifica que la notaría sea una de las autorizadas en Colombia (Decreto 960 de 1970).',
     };
   },
