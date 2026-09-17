@@ -76,6 +76,36 @@ export async function analyzeCase(
       });
     }
 
+    // 3.5 — R26: Verificar calidad de extraccion antes de analizar
+    // Si un documento CRITICO (escritura o certificado) tiene confianza < 60,
+    // bloquear el analisis y pedir al usuario una version mas nitida.
+    const DOCS_CRITICOS_R26 = ['escritura', 'certificado'];
+    const CONFIANZA_MINIMA_R26 = 60;
+
+    const documentosBajaCalidad = documentosExtraidos
+      .filter((d) => DOCS_CRITICOS_R26.includes(d.tipo))
+      .filter((d) => {
+        const conf = d.rawExtraction?.confidence ?? 0;
+        return conf < CONFIANZA_MINIMA_R26;
+      });
+
+    if (documentosBajaCalidad.length > 0) {
+      const detalles = documentosBajaCalidad
+        .map((d) => `"${d.filename}" (confianza ${d.rawExtraction?.confidence ?? 0}%)`)
+        .join(', ');
+
+      await prisma.case.update({
+        where: { id: caseId },
+        data: { estado: 'failed' },
+      });
+
+      throw new DocumentError(
+        'DOCUMENT_ILLEGIBLE',
+        `No podemos analizar el expediente porque los siguientes documentos no son legibles: ${detalles}. Por favor, sube versiones mas nitidas e intenta de nuevo.`,
+        422
+      );
+    }
+
     // 4. Clasificar documentos
     const escritura = documentosExtraidos.find((d) => d.tipo === 'escritura') || null;
     const certificado = documentosExtraidos.find((d) => d.tipo === 'certificado') || null;
