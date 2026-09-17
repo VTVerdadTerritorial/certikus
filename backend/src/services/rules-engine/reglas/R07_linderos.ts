@@ -10,6 +10,24 @@ import type { Rule, RuleContext, RuleResult } from '../../../types/rules.types';
 
 const PUNTOS_CARDINALES = ['norte', 'sur', 'oriente', 'occidente', 'este', 'oeste'];
 
+// Mapa de sinonimos notariales -> punto cardinal canonico.
+// En escrituras antiguas es comun usar "cabecera/pie" en lugar de "norte/sur",
+// y "costado derecho/izquierdo" en lugar de "oriente/occidente".
+const SINONIMOS_CARDINALES: Record<string, string> = {
+  norte: 'norte',
+  cabecera: 'norte',
+  pie: 'sur',
+  sur: 'sur',
+  oriente: 'oriente',
+  este: 'oriente',
+  'costado derecho': 'oriente',
+  'lado derecho': 'oriente',
+  occidente: 'occidente',
+  oeste: 'occidente',
+  'costado izquierdo': 'occidente',
+  'lado izquierdo': 'occidente',
+};
+
 // Normaliza un texto: minusculas, sin tildes, espacios simples.
 function normalizar(texto: string): string {
   return texto
@@ -28,27 +46,35 @@ function extraerLinderos(texto: string): Record<string, string> {
   const resultado: Record<string, string> = {};
   const t = normalizar(texto);
 
-  for (const punto of PUNTOS_CARDINALES) {
-    // Buscar el punto cardinal y capturar el texto siguiente (hasta el proximo punto cardinal o fin)
-    const idx = t.indexOf(punto);
-    if (idx === -1) continue;
+  // Detectar TODAS las apariciones de sinonimos (incluyendo "costado derecho" que tiene espacio)
+  type Match = { pos: number; len: number; cardinal: string };
+  const matches: Match[] = [];
 
-    const desde = idx + punto.length;
-    let hasta = t.length;
-    for (const otro of PUNTOS_CARDINALES) {
-      if (otro === punto) continue;
-      const idxOtro = t.indexOf(otro, desde);
-      if (idxOtro !== -1 && idxOtro < hasta) hasta = idxOtro;
+  for (const [sinonimo, cardinal] of Object.entries(SINONIMOS_CARDINALES)) {
+    let idx = 0;
+    while ((idx = t.indexOf(sinonimo, idx)) !== -1) {
+      matches.push({ pos: idx, len: sinonimo.length, cardinal });
+      idx += sinonimo.length;
     }
+  }
+
+  // Ordenar por posicion
+  matches.sort((a, b) => a.pos - b.pos);
+
+  // Para cada match, extraer el texto hasta el siguiente match
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const desde = m.pos + m.len;
+    const hasta = i + 1 < matches.length ? matches[i + 1].pos : t.length;
 
     let colindante = t.substring(desde, hasta).trim();
-    // Limpiar prefijos comunes: "con", "con propiedades de", "propiedades del", "colinda con"
     colindante = colindante
-      .replace(/^(con |con propiedades (de |del |de la )?|propiedades (de |del |de la )?|colinda con |linda con |y )+/, '')
+      .replace(/^(con |o |y |, )+/, '')
+      .replace(/^(con propiedades (de |del |de la )?|propiedades (de |del |de la )?|colinda con |linda con )+/, '')
       .trim();
 
-    if (colindante.length > 2) {
-      resultado[punto] = colindante;
+    if (colindante.length > 2 && !resultado[m.cardinal]) {
+      resultado[m.cardinal] = colindante;
     }
   }
   return resultado;
