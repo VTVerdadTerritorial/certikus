@@ -65,10 +65,18 @@ Cuando el documento sea una ESCRITURA PÚBLICA:
    · "título antecedente", "antecedente registral", "inscrito bajo el folio"
    · Extrae el número COMPLETO del folio (ej: "240-24248"). Si menciona dos números (escritura y folio), prioriza el FOLIO DE MATRÍCULA.
 
-3. Para "notaria_nombre": extrae el nombre COMPLETO tal como aparece.
-   · Correcto: "Notaría Segunda del Círculo de Pasto", "Notaría 4 de Bogotá"
-   · Incorrecto: "SEGUNDA" (solo el número)
-   · Busca frases como: "ante mí [NOMBRE], Notaría [N] del Círculo de [CIUDAD]"
+3. Para "notaria_nombre": extrae el nombre de la NOTARIA (la ENTIDAD, NO el notario).
+   · CORRECTO: "Notaría Segunda del Círculo de Pasto", "Notaría 4 de Bogotá", "Notaría 1a de Medellín"
+   · INCORRECTO: "MIRIAM CONSUELO LASSO MEDINA" (ese es el NOMBRE DEL NOTARIO, una persona)
+   · INCORRECTO: "SEGUNDA" (solo el número, sin el resto del nombre)
+
+   REGLA CLAVE: El notario es una PERSONA que actua; la notaria es una ENTIDAD/OFICINA.
+   Cuando el documento diga "ante mi [NOMBRE DEL NOTARIO], Notaria [N] del Circulo de [CIUDAD]",
+   DEBES extraer "Notaria [N] del Circulo de [CIUDAD]" y NUNCA el nombre del notario.
+
+   Ejemplo del texto: "ante mi MIRIAM CONSUELO LASSO MEDINA, Notaria Segunda del Circulo de Pasto"
+   → notaria_nombre: "Notaria Segunda del Circulo de Pasto"
+   → El nombre "MIRIAM CONSUELO LASSO MEDINA" se IGNORA (es el notario, no la notaria)
 
 4. Para "area_m2": convierte hectáreas a metros cuadrados.
    · 1 hectárea = 10.000 m²
