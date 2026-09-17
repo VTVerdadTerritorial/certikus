@@ -433,7 +433,8 @@ export async function extractDataFromDocument(
             { text: PROMPT },
             {
               inlineData: {
-                mimeType: 'application/pdf',
+                // Usar el mimetype REAL del documento (PDF, JPG o PNG)
+                mimeType: document.mimeType || 'application/pdf',
                 data: base64Data,
               },
             },

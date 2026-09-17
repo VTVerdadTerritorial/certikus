@@ -77,9 +77,20 @@ export async function upload(
       });
       return;
     }
-    if (req.file.mimetype !== 'application/pdf') {
+    // MIMEs permitidos: PDF + imagenes (JPG, PNG) por contexto colombiano
+    const MIMES_PERMITIDOS = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+    ];
+    if (!MIMES_PERMITIDOS.includes(req.file.mimetype)) {
       res.status(415).json({
-        error: { code: 'INVALID_FILE_TYPE', message: 'Solo se permiten archivos PDF.', timestamp: new Date().toISOString() },
+        error: {
+          code: 'INVALID_FILE_TYPE',
+          message: 'Solo se permiten archivos PDF, JPG o PNG.',
+          timestamp: new Date().toISOString(),
+        },
       });
       return;
     }
