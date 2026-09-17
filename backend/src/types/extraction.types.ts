@@ -44,6 +44,7 @@ export interface DatosEscritura {
 }
 
 export interface DatosCedula {
+  tipo_cedula: 'cedula_amarilla' | 'cedula_digital_fisica' | 'cedula_digital_app' | null;
   nombre_completo: string | null;
   numero_documento: string | null;
   fecha_nacimiento: string | null;

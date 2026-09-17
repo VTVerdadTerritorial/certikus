@@ -125,6 +125,24 @@ Campos a extraer:
 REGLA CRITICA: NUNCA uses la fecha de nacimiento como fecha_expedicion
 ni viceversa. Son dos campos independientes.
 
+CLASIFICACION DEL TIPO DE CEDULA (campo "tipo_cedula"):
+
+  - "cedula_amarilla": Cedula tradicional amarilla con hologramas (formato anterior a 2020).
+    Muestra fotografia, huella, firma y fondo amarillo con patrones.
+
+  - "cedula_digital_fisica": Cedula digital en formato fisico de policarbonato (nueva generacion
+    desde 2020). Es una tarjeta plastica mas rigida, con chip y codigos QR.
+
+  - "cedula_digital_app": Captura de pantalla de la app movil "Cedula Digital Colombia"
+    de la Registraduria. Se reconoce porque muestra la interfaz de la app con botones,
+    menus, fecha de actualizacion, y el texto "Cedula Digital" o el logo de la app.
+    NOTA: si ves barra de estado de telefono, botones de app o menus moviles, es tipo app.
+
+  - null: si no puedes determinar el tipo.
+
+REGLA: Si el documento NO es una cedula colombiana (ej. cedula de extranjeria, pasaporte,
+tarjeta de identidad), deja tipo_cedula en null y clasifica el documento como "otro".
+
 INSTRUCCIONES ESPECÍFICAS PARA CERTIFICADO DE TRADICIÓN Y LIBERTAD
 ═══════════════════════════════════════════════════════════════════════════
 
@@ -222,6 +240,7 @@ ESTRUCTURA DEL JSON DE SALIDA
     "bienes_comunes": ["array de strings"] o null
   } o null,
   "cedula": {
+    "tipo_cedula": "cedula_amarilla | cedula_digital_fisica | cedula_digital_app | null",
     "nombre_completo": "string o null",
     "numero_documento": "string o null",
     "fecha_nacimiento": "YYYY-MM-DD o null",
