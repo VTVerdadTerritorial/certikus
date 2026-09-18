@@ -209,6 +209,46 @@ NO es un paz y salvo en si mismo, pero puede usarse como soporte. Clasificar
 el documento como "paz_salvo_predial" solo si es el paz y salvo emitido por la
 tesoreria, no la liquidacion.
 
+═══════════════════════════════════════════════════════════════════════════
+INSTRUCCIONES ESPECIFICAS PARA ANALISIS DE ANOTACIONES
+═══════════════════════════════════════════════════════════════════════════
+
+Para CADA anotación en el certificado de tradición y libertad, extrae:
+
+1. numero_anotacion: El número secuencial de la anotación.
+2. codigo_anotacion: El código numérico oficial de la SNR que clasifica el acto.
+   Series principales:
+   - 01xx: Tradición (Compraventa, Permuta, Donación) → transfieren dominio.
+   - 02xx: Gravámenes (0201 Hipoteca, 0205 Patrimonio de Familia, 0206 Afectación Vivienda Familiar, 0207 Usufructo, 0208 Servidumbres).
+   - 04xx: Medidas Cautelares (0427 Embargo Ejecutivo con Acción Personal, 0428 Embargo, 0411 Demanda, 0421 Secuestro).
+   - 06xx: Falsa Tradición / Dominio Incompleto (0604 Compraventa de Cosa Ajena, 0607 Compraventa de Derechos y Acciones, 0610 Venta de Derechos Herenciales).
+   - 09xx: Otros Actos (Adjudicaciones por sucesión, liquidaciones de sociedades).
+   - 91x: Otros Actos Administrativos (Afectaciones por obras públicas).
+3. descripcion_codigo: La descripción textual que acompaña al código.
+4. fecha_anotacion: La fecha de la anotación (YYYY-MM-DD).
+5. especificacion: El texto completo de la especificación de la anotación.
+6. personas: Array de strings con los intervinientes (DE: X, A: Y).
+
+REGLA CRITICA: El código de anotación es un dato NUMERICO de 4 dígitos. NO confundir con el número de anotación secuencial. El código aparece después de "ESPECIFICACION:" o "Redacción:".
+
+═══════════════════════════════════════════════════════════════════════════
+INSTRUCCIONES ESPECIFICAS PARA CERTIFICADO DE USO DE SUELO
+═══════════════════════════════════════════════════════════════════════════
+
+Cuando el documento sea un CERTIFICADO O CONCEPTO DE USO DE SUELO (expedido por Curaduría Urbana o Secretaría de Planeación Municipal), llena el objeto "uso_suelo" con:
+
+1. numero_predial_nacional: Número Predial Nacional de 30 dígitos (campo clave).
+2. direccion_predio: Dirección o nomenclatura del predio.
+3. municipio: Municipio donde se ubica el predio.
+4. uso_principal_permitido: Uso principal autorizado por el POT (ej. "Residencial", "Comercial").
+5. usos_complementarios: Array de usos complementarios permitidos.
+6. usos_prohibidos: Array de usos prohibidos.
+7. norma_urbanistica: Acuerdo o Decreto que sustenta el concepto (ej. "Acuerdo 0373 de 2014").
+8. fecha_expedicion: Fecha de expedición del certificado (YYYY-MM-DD).
+9. entidad_emisora: Entidad que expide (Curaduría Urbana, Secretaría de Planeación).
+
+REGLA: La vigencia del certificado varía por municipio (1, 2 o 3 años). Si el documento indica vigencia, extraerla. Si no, dejar null.
+
 INSTRUCCIONES ESPECÍFICAS PARA CERTIFICADO DE TRADICIÓN Y LIBERTAD
 ═══════════════════════════════════════════════════════════════════════════
 
@@ -331,6 +371,18 @@ ESTRUCTURA DEL JSON DE SALIDA
     "fecha_expedicion": "YYYY-MM-DD o null",
     "lugar_expedicion": "string o null",
     "sexo": "M | F | null"
+  } o null,
+  "uso_suelo": {
+    "numero_predial_nacional": "string o null",
+    "direccion_predio": "string o null",
+    "municipio": "string o null",
+    "uso_principal_permitido": "string o null",
+    "usos_complementarios": ["string"] o null,
+    "usos_prohibidos": ["string"] o null,
+    "norma_urbanistica": "string o null",
+    "fecha_expedicion": "YYYY-MM-DD o null",
+    "entidad_emisora": "string o null",
+    "vigencia_hasta": "YYYY-MM-DD o null"
   } o null,
   "certificado": {
     "numero_matricula": "string o null",

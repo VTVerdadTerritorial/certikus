@@ -1,9 +1,9 @@
 import type { Rule, RuleContext, RuleResult } from '../../types/rules.types';
 
 // ============================================================================
-// CERTIKUS v1.0 — Núcleo de 16 reglas activas
+// CERTIKUS v1.0 — Núcleo de 18 reglas activas
 // ============================================================================
-// Activas (16): R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R13, R16, R19, R20, R23, R25
+// Activas (18): R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R13, R16, R19, R20, R21, R22, R23, R25
 // Diferidas (5): R11, R12, R14, R15, R17
 // Las diferidas se activarán tras el piloto real con feedback de usuarios.
 // ============================================================================
@@ -26,6 +26,8 @@ import {
 import { R16_IdentificacionInmueble } from './reglas/R16_identificacion_inmueble';
 import { R19_CedulaVsTitular } from './reglas/R19_cedula_vs_titular';
 import { R20_FormatoCedula } from './reglas/R20_formato_cedula';
+import { R21_Gravamenes } from './reglas/R21_gravamenes';
+import { R22_MedidasCautelares } from './reglas/R22_medidas_cautelares';
 import { R23_PazSalvoPredial } from './reglas/R23_paz_salvo_predial';
 import { R25_PazSalvoValorizacion } from './reglas/R25_paz_salvo_valorizacion';
 
@@ -44,6 +46,8 @@ export const ALL_RULES: Rule[] = [
   R16_IdentificacionInmueble,
   R19_CedulaVsTitular,
   R20_FormatoCedula,
+  R21_Gravamenes,
+  R22_MedidasCautelares,
   R23_PazSalvoPredial,
   R25_PazSalvoValorizacion,
 ];

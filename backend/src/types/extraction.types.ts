@@ -12,6 +12,8 @@ export interface PersonaExtraida {
 
 export interface AnotacionExtraida {
   numero_anotacion: number | null;
+  codigo_anotacion: string | null;
+  descripcion_codigo: string | null;
   fecha_anotacion: string | null;
   naturaleza: string | null;
   documento_origen: string | null;
@@ -41,6 +43,19 @@ export interface DatosEscritura {
   coeficiente_copropiedad: number | null;
   bienes_privados: string[] | null;
   bienes_comunes: string[] | null;
+}
+
+export interface DatosUsoSuelo {
+  numero_predial_nacional: string | null;
+  direccion_predio: string | null;
+  municipio: string | null;
+  uso_principal_permitido: string | null;
+  usos_complementarios: string[] | null;
+  usos_prohibidos: string[] | null;
+  norma_urbanistica: string | null;
+  fecha_expedicion: string | null;
+  entidad_emisora: string | null;
+  vigencia_hasta: string | null;
 }
 
 export interface DatosPazSalvo {
@@ -95,6 +110,7 @@ export interface ExtractionResult {
   fecha_documento: string | null;
   notaria: string | null;
   escritura: DatosEscritura | null;
+  uso_suelo: DatosUsoSuelo | null;
   paz_salvo: DatosPazSalvo | null;
   cedula: DatosCedula | null;
   certificado: DatosCertificado | null;
