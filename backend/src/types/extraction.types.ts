@@ -124,6 +124,7 @@ export interface ExtractionResult {
     | 'poder'
     | 'camara_comercio'
     | 'paz_salvo_predial'
+    | 'liquidacion_predial'
     | 'paz_salvo_valorizacion'
     | 'certificado_catastral'
     | 'adicional'

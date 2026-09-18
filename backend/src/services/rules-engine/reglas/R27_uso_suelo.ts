@@ -65,9 +65,9 @@ export const R27_UsoSuelo: Rule = {
     if (!usoSuelo) {
       return {
         reglaId: 'R27', severity: 'ok',
-        titulo: 'Uso de suelo no aplica',
-        descripcion: 'No se aporto certificado de uso de suelo. Solo es requerido para ciertos tramites (licencias, PH, etc.).',
-        razon: 'El uso de suelo es exigido por algunos municipios para tramites especificos. Si no aplica, no es requerido.',
+        titulo: 'Sin informacion de uso de suelo',
+        descripcion: 'No se aporto el certificado de uso de suelo. Sin este documento no hay informacion sobre el uso permitido del predio (residencial, comercial, industrial, etc.).',
+        razon: 'El uso de suelo es exigido por algunos municipios para tramites especificos (licencias de construccion, PH, etc.). Consulta con la Curaduria o Planeacion Municipal si aplica a tu tramite.',
       };
     }
 

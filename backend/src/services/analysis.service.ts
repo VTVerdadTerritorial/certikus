@@ -142,6 +142,12 @@ export async function analyzeCase(
 
       if (!tipoEsperado) continue;
 
+      // EXCEPCION: si el slot es adicional, aceptar cualquier documento predial
+      if (doc.tipo === 'adicional') {
+        const tiposPredialesAceptadosEnAdicional = ['adicional', 'paz_salvo_predial', 'liquidacion_predial', 'paz_salvo_valorizacion', 'certificado_catastral', 'uso_suelo'];
+        if (tipoDetectado === null || tiposPredialesAceptadosEnAdicional.includes(tipoDetectado)) { continue; }
+      }
+
       // Documento clasificado como "otro" -> rechazo siempre
       if (tipoDetectado === 'otro') {
         documentosMalUbicados.push(

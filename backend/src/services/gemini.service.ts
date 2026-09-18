@@ -344,7 +344,7 @@ ESTRUCTURA DEL JSON DE SALIDA
   "matricula_inmobiliaria": "string o null",
   "fecha_documento": "YYYY-MM-DD o null",
   "notaria": "string o null",
-  "tipo_detectado": "escritura | certificado | cedula | poder | camara_comercio | paz_salvo_predial | paz_salvo_valorizacion | certificado_catastral | adicional | otro | null",
+  "tipo_detectado": "escritura | certificado | cedula | poder | camara_comercio | paz_salvo_predial | liquidacion_predial | paz_salvo_valorizacion | certificado_catastral | adicional | otro | null",
   "escritura": {
     "numero_escritura": "string o null",
     "fecha_escritura": "YYYY-MM-DD o null",

@@ -137,6 +137,36 @@ export const R07_Linderos: Rule = {
     const palabrasB = palabrasSignificativas(linderosNormB);
 
     const comunes = [...palabrasA].filter((p) => palabrasB.has(p));
+    const soloEnEscritura = [...palabrasA].filter((p) => !palabrasB.has(p));
+    const soloEnCertificado = [...palabrasB].filter((p) => !palabrasA.has(p));
+
+    const PALABRAS_UBICACION = new Set([
+      'piedras', 'guindas', 'gindas', 'antonio', 'buesaco', 'narino',
+      'pasto', 'seccion', 'actualidad',
+    ]);
+    const colindantesSoloEscritura = soloEnEscritura.filter((p) => !PALABRAS_UBICACION.has(p));
+    const colindantesSoloCertificado = soloEnCertificado.filter((p) => !PALABRAS_UBICACION.has(p));
+
+    if (colindantesSoloEscritura.length > 0 || colindantesSoloCertificado.length > 0) {
+      const detalles = [];
+      if (colindantesSoloEscritura.length > 0) {
+        detalles.push('En escritura pero no en certificado: ' + colindantesSoloEscritura.join(', '));
+      }
+      if (colindantesSoloCertificado.length > 0) {
+        detalles.push('En certificado pero no en escritura: ' + colindantesSoloCertificado.join(', '));
+      }
+      return {
+        reglaId: 'R07', severity: 'review',
+        titulo: 'Colindantes no coincidentes',
+        descripcion: 'Los linderos tienen colindantes que aparecen en un documento pero no en el otro.',
+        docAId: escritura.id, docAField: 'Linderos',
+        docAValue: linderosEscritura.substring(0, 200),
+        docBId: certificado.id, docBField: 'Linderos',
+        docBValue: linderosCertificado.substring(0, 200),
+        razon: 'Verifica que los colindantes sean los mismos en ambos documentos. ' + detalles.join('. ') + ' (Art. 31 Decreto 960 de 1970).',
+      };
+    }
+
 
     // Criterio: >= 2 palabras significativas comunes (tipicamente nombre + apellido
     // de un colindante) indican que es el mismo predio. NO usamos Jaccard porque
