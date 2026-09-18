@@ -46,6 +46,7 @@ export interface DatosEscritura {
 }
 
 export interface DatosUsoSuelo {
+  tipo_suelo: 'urbano' | 'rural' | 'expansion_urbana' | 'suburbano' | 'proteccion' | null;
   numero_predial_nacional: string | null;
   direccion_predio: string | null;
   municipio: string | null;

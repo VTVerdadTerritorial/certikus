@@ -249,6 +249,35 @@ Cuando el documento sea un CERTIFICADO O CONCEPTO DE USO DE SUELO (expedido por 
 
 REGLA: La vigencia del certificado varía por municipio (1, 2 o 3 años). Si el documento indica vigencia, extraerla. Si no, dejar null.
 
+CLASIFICACION DEL SUELO (campo "tipo_suelo"):
+
+Segun la Ley 388 de 1997 (Ley de Ordenamiento Territorial) y el Decreto 1077 de 2015,
+el suelo se clasifica en:
+
+  - "urbano": Area dentro del perimetro urbano con infraestructura vial, acueducto
+    y alcantarillado. Usos tipicos: residencial, comercial, servicios, industrial,
+    dotacional.
+
+  - "rural": Terrenos no aptos para uso urbano. Usos tipicos: agricola, ganadero,
+    forestal, agropecuario, agroforestal, minero.
+
+  - "expansion_urbana": Area urbanizable a mediano o largo plazo, sujeta a plan
+    parcial. No se puede urbanizar sin plan parcial aprobado.
+
+  - "suburbano": Zona mixta dentro del suelo rural. Usos tipicos: vivienda campestre,
+    parcelaciones, equipamientos de bajo impacto.
+
+  - "proteccion": Areas de conservacion, reserva forestal, humedales, paramos.
+    Usos muy restringidos (solo conservacion).
+
+  - null: si no puedes determinar el tipo de suelo.
+
+NOTA: Si el documento dice "suelo urbano", "area urbana", "perimetro urbano" -> "urbano".
+Si dice "suelo rural", "area rural", "predio rural" -> "rural".
+Si dice "expansion urbana" o "suelo de expansion" -> "expansion_urbana".
+Si dice "suburbano" o "area suburbana" -> "suburbano".
+Si dice "proteccion", "reserva", "conservacion" -> "proteccion".
+
 INSTRUCCIONES ESPECÍFICAS PARA CERTIFICADO DE TRADICIÓN Y LIBERTAD
 ═══════════════════════════════════════════════════════════════════════════
 
@@ -373,6 +402,7 @@ ESTRUCTURA DEL JSON DE SALIDA
     "sexo": "M | F | null"
   } o null,
   "uso_suelo": {
+    "tipo_suelo": "urbano | rural | expansion_urbana | suburbano | proteccion | null",
     "numero_predial_nacional": "string o null",
     "direccion_predio": "string o null",
     "municipio": "string o null",
