@@ -525,7 +525,7 @@ export async function extractDataFromDocument(
       ],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 32768,
         responseMimeType: 'application/json',
       },
     });
@@ -541,14 +541,50 @@ export async function extractDataFromDocument(
     let parsedData: ExtractionResult;
     try {
       // Limpiar posibles bloques de código markdown
-      const cleanJson = textContent
+      let cleanJson = textContent
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim();
 
-      parsedData = JSON.parse(cleanJson) as ExtractionResult;
+      // Extraer solo el objeto JSON (por si Gemini devuelve texto extra)
+      const firstBrace = cleanJson.indexOf('{');
+      const lastBrace = cleanJson.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleanJson = cleanJson.substring(firstBrace, lastBrace + 1);
+      }
+
+      try {
+        parsedData = JSON.parse(cleanJson) as ExtractionResult;
+      } catch (firstErr) {
+        // Fallback: intentar auto-cerrar JSON truncado
+        console.warn('[Gemini] JSON truncado o malformado. Intentando auto-reparar...');
+        console.warn('[Gemini] Tamaño de respuesta:', textContent.length, 'caracteres');
+
+        // Quitar strings incompletos al final
+        let repaired = cleanJson.replace(/,\s*"[^"]*$/g, '');
+        repaired = repaired.replace(/,\s*\{[^}]*$/g, '');
+        repaired = repaired.replace(/,\s*$/g, '');
+
+        // Contar llaves y corchetes abiertos
+        const openBraces = (repaired.match(/{/g) || []).length;
+        const closeBraces = (repaired.match(/}/g) || []).length;
+        const openBrackets = (repaired.match(/\[/g) || []).length;
+        const closeBrackets = (repaired.match(/\]/g) || []).length;
+
+        // Cerrar los que faltan
+        for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
+        for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+
+        try {
+          parsedData = JSON.parse(repaired) as ExtractionResult;
+          console.log('[Gemini] JSON reparado exitosamente.');
+        } catch (secondErr) {
+          console.error('Error parseando JSON (incluso tras reparar):', textContent.substring(0, 500));
+          throw new Error('La respuesta de Gemini no es un JSON válido (incluso tras intentar reparar).');
+        }
+      }
     } catch (parseErr) {
-      console.error('Error parseando JSON de Gemini:', textContent);
+      console.error('Error parseando JSON de Gemini:', textContent.substring(0, 500));
       throw new Error('La respuesta de Gemini no es un JSON válido.');
     }
 
