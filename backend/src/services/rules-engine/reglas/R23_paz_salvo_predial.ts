@@ -119,8 +119,8 @@ export const R23_PazSalvoPredial: Rule = {
       const nombreTitular = (titular.nombre_completo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       const nombrePS = (datos.propietario || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-      const palabrasTit = new Set(nombreTitular.split(' ').filter((p) => p.length > 2));
-      const palabrasPS = new Set(nombrePS.split(' ').filter((p) => p.length > 2));
+      const palabrasTit = new Set(nombreTitular.split(' ').filter((p: any) => p.length > 2));
+      const palabrasPS = new Set(nombrePS.split(' ').filter((p: any) => p.length > 2));
       let coincidencias = 0;
       for (const p of palabrasTit) {
         if (palabrasPS.has(p)) coincidencias++;

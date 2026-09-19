@@ -186,7 +186,8 @@ export async function analyzeCase(
     );
 
     // 5. Ejecutar motor de reglas
-    const context: RuleContext = { escritura, certificado, otrosDocumentos };
+    const tipoOperacion = (caseData.tipoOperacion || 'orip') as 'orip' | 'notaria' | 'titularidad';
+    const context: RuleContext = { escritura, certificado, otrosDocumentos, tipoOperacion };
     console.log('[Análisis] Ejecutando 15 reglas...');
     const findings = ejecutarReglas(context);
 

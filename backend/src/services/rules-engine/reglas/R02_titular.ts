@@ -58,12 +58,12 @@ export const R02_Titular: Rule = {
     const titulares = certificado.rawExtraction?.certificado?.titulares || [];
 
     const nombresEscritura = comparecientes
-      .map((c) => c.nombre_completo)
-      .filter((n): n is string => !!n);
+      .map((c: any) => c.nombre_completo)
+      .filter((n: any): n is string => !!n);
 
     const nombresCertificado = titulares
-      .map((t) => t.nombre_completo)
-      .filter((n): n is string => !!n);
+      .map((t: any) => t.nombre_completo)
+      .filter((n: any): n is string => !!n);
 
     if (nombresEscritura.length === 0 || nombresCertificado.length === 0) {
       return {
@@ -87,8 +87,8 @@ export const R02_Titular: Rule = {
 
     // Al menos un titular del certificado debe corresponder a un compareciente
     // de la escritura. La comparación tolera cambios de orden y tildes.
-    const coincidencia = nombresCertificado.find((nCert) =>
-      nombresEscritura.some((nEsc) => sonMismoTitular(nCert, nEsc))
+    const coincidencia = nombresCertificado.find((nCert: any) =>
+      nombresEscritura.some((nEsc: any) => sonMismoTitular(nCert, nEsc))
     );
 
     if (coincidencia) {

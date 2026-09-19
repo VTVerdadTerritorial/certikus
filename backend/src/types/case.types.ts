@@ -11,7 +11,10 @@ export type TipoOperacion =
   | 'donacion'
   | 'permuta'
   | 'propiedad_horizontal'
-  | 'otro';
+  | 'otro'
+  | 'orip'
+  | 'notaria'
+  | 'titularidad';
 
 export interface CreateCaseInput {
   nombre: string;

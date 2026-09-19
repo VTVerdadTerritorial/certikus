@@ -12,6 +12,9 @@ const tipoOperacionEnum = z.enum([
   'permuta',
   'propiedad_horizontal',
   'otro',
+  'orip',
+  'notaria',
+  'titularidad',
 ]);
 
 export const createCaseSchema = z.object({

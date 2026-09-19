@@ -18,6 +18,7 @@ export interface RuleContext {
   escritura: DocumentWithExtraction | null;
   certificado: DocumentWithExtraction | null;
   otrosDocumentos: DocumentWithExtraction[];
+  tipoOperacion?: 'orip' | 'notaria' | 'titularidad' | null;
 }
 
 export interface RuleResult {

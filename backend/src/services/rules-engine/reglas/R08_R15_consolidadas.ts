@@ -202,12 +202,12 @@ export const R11_CedulasConsistentes: Rule = {
     const comparecientes = escritura.rawExtraction?.escritura?.comparecientes || [];
     const titulares = certificado.rawExtraction?.certificado?.titulares || [];
     const docsEscritura = comparecientes
-      .map((c) => c.numero_documento)
-      .filter((n): n is string => !!n)
+      .map((c: any) => c.numero_documento)
+      .filter((n: any): n is string => !!n)
       .map(normalizarDoc);
     const docsCertificado = titulares
-      .map((t) => t.numero_documento)
-      .filter((n): n is string => !!n)
+      .map((t: any) => t.numero_documento)
+      .filter((n: any): n is string => !!n)
       .map(normalizarDoc);
     if (docsEscritura.length === 0 || docsCertificado.length === 0) {
       return {
@@ -217,7 +217,7 @@ export const R11_CedulasConsistentes: Rule = {
         razon: 'Sin documentos de identidad en ambos archivos no se puede validar.',
       };
     }
-    const hayCoincidencia = docsCertificado.some((d) => docsEscritura.includes(d));
+    const hayCoincidencia = docsCertificado.some((d: any) => docsEscritura.includes(d));
     if (hayCoincidencia) {
       return {
         reglaId: 'R11', severity: 'ok',
@@ -261,8 +261,8 @@ export const R12_PorcentajeTitularidad: Rule = {
     }
     const titulares = certificado.rawExtraction?.certificado?.titulares || [];
     const porcentajes = titulares
-      .map((t) => t.porcentaje)
-      .filter((p): p is number => typeof p === 'number');
+      .map((t: any) => t.porcentaje)
+      .filter((p: any): p is number => typeof p === 'number');
     if (porcentajes.length === 0) {
       return {
         reglaId: 'R12', severity: 'review',
@@ -271,7 +271,7 @@ export const R12_PorcentajeTitularidad: Rule = {
         razon: 'Verifica manualmente las cuotas de los titulares en el certificado.',
       };
     }
-    const suma = porcentajes.reduce((a, b) => a + b, 0);
+    const suma = porcentajes.reduce((a: any, b: any) => a + b, 0);
     if (Math.abs(suma - 100) < 0.5) {
       return {
         reglaId: 'R12', severity: 'ok',
