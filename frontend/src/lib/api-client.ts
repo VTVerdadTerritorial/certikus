@@ -327,7 +327,11 @@ export const documentsApi = {
       `/api/v1/cases/${caseId}/documents`,
       { requiresAuth: true, retries: 2 }
     ),
-
+delete: (documentId: string) =>
+    apiRequest<{ message: string }>(`/api/v1/documents/${documentId}`, {
+      method: 'DELETE',
+      requiresAuth: true,
+    }),
   download: (documentId: string) => {
     const token = getToken();
     return `${API_URL}/api/v1/documents/${documentId}/download?token=${token}`;

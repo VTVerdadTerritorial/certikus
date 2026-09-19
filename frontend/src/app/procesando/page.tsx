@@ -306,7 +306,7 @@ export default function ProcesandoPage() {
 
                 {errorInfo.actionHref && (
                   <Link
-                    href={errorInfo.actionHref}
+                    href={errorInfo.actionHref === "/carga" && caseId ? `/carga?caseId=${caseId}` : errorInfo.actionHref}
                     className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />

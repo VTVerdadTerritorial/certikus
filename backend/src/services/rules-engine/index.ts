@@ -1,9 +1,9 @@
 import type { Rule, RuleContext, RuleResult } from '../../types/rules.types';
 
 // ============================================================================
-// CERTIKUS v1.0 — Núcleo de 21 reglas activas
+// CERTIKUS v1.0 — Núcleo de 22 reglas activas
 // ============================================================================
-// Activas (21): R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R13, R16, R19, R20, R21, R22, R23, R24, R25, R26, R27
+// Activas (21): R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R13, R16, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28
 // Diferidas (5): R11, R12, R14, R15, R17
 // Las diferidas se activarán tras el piloto real con feedback de usuarios.
 // ============================================================================
@@ -31,6 +31,7 @@ import { R22_MedidasCautelares } from './reglas/R22_medidas_cautelares';
 import { R24_CadenaTitularidad } from './reglas/R24_cadena_titularidad';
 import { R26_DerechosHereditarios } from './reglas/R26_derechos_hereditarios';
 import { R27_UsoSuelo } from './reglas/R27_uso_suelo';
+import { R28_CedulasVsComparecientes } from './reglas/R28_cedulas_comparecientes';
 import { R23_PazSalvoPredial } from './reglas/R23_paz_salvo_predial';
 import { R25_PazSalvoValorizacion } from './reglas/R25_paz_salvo_valorizacion';
 
@@ -56,6 +57,7 @@ export const ALL_RULES: Rule[] = [
   R25_PazSalvoValorizacion,
   R26_DerechosHereditarios,
   R27_UsoSuelo,
+  R28_CedulasVsComparecientes,
 ];
 
 // ============================================================================
